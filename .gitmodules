@@ -4,3 +4,6 @@
 [submodule "tweepy"]
 	path = tweepy
 	url = https://github.com/tweepy/tweepy.git
+[submodule "twitter"]
+	path = twitter
+	url = git://github.com/sixohsix/twitter.git

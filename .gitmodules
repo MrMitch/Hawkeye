@@ -1,0 +1,3 @@
+[submodule "rdcli"]
+	path = rdcli
+	url = git://github.com/MrMitch/realdebrid-CLI.git

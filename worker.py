@@ -45,9 +45,8 @@ def get_oauth_info():
 def initialize_db():
     with sqlite3.connect(SQLITE, detect_types=sqlite3.PARSE_DECLTYPES) as connection:
         cursor = connection.cursor()
-        cursor.execute('CREATE TABLE refs(ID INT PRIMARY KEY, creation_date timestamp, processing_date timestamp)')
-        cursor.execute('CREATE TABLE failed(ID INT PRIMARY KEY, url timestamp, processing_date timestamp)')
-        cursor.execute('CREATE TABLE completed(ID INT PRIMARY KEY, url timestamp, processing_date timestamp)')
+        cursor.execute('CREATE TABLE refs(tweet_id INT, creation_date timestamp, processing_date timestamp)')
+        cursor.execute('CREATE TABLE failed(sender text, url text, processing_date timestamp)')
 
 
 def main():

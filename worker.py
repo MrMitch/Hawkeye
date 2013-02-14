@@ -1,63 +1,39 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from ConfigParser import SafeConfigParser
 from os import path
 import sqlite3
 from datetime import datetime
 from urllib2 import urlopen
-import rdcli.RDWorker as RDWorker
+from rdcli import RDWorker, UnrestrictionError
 import twitter
 
+from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, RDCLI_COOKIE, SQLITE, write_configuration_file, initialize_db
 
-BASE = path.join(path.abspath(path.expanduser(u'~')), '.config', 'hawkeye')
-BASE = path.join(path.abspath(path.expanduser('./')))
-CONF = path.join(BASE, 'hawkeye_oauth.conf')
-SQLITE = path.join(BASE, 'hawkeye.db')
-
-RDCLI_CONF = path.join(BASE, 'rdcli.conf')
-RDCLI_COOKIE = path.join(BASE, 'rdcli.cookie')
-
-APP_NAME = 'Hawkeye Server'
-CONSUMER_KEY = 'OzICYfiYXDZlo41cMBr1yQ'
-CONSUMER_SECRET = '7mN5kptD3Qc14Jb5KWJnTMcICG6FXf5cAAJdX7MA'
-
-OUTPUT_DIR = path.abspath(path.join(path.expanduser('~'), 'Videos'))
-
-
-def get_oauth_info():
-
-    print BASE
-    try:
-        with open(CONF) as conf:
-            lines = conf.readlines()
-
-        return {
-            'consumer_key': lines[0].strip(),
-            'consumer_secret': lines[1].strip(),
-            'access_token': lines[2].strip(),
-            'access_token_secret': lines[3].strip(),
-            'account_name': lines[4].strip()
-        }
-    except Exception as e:
-        raise IOError('Unable to read conf file: %s' % str(e))
-
-
-def initialize_db():
-    with sqlite3.connect(SQLITE, detect_types=sqlite3.PARSE_DECLTYPES) as connection:
-        cursor = connection.cursor()
-        cursor.execute('CREATE TABLE refs(tweet_id INT, creation_date timestamp, processing_date timestamp)')
-        cursor.execute('CREATE TABLE failed(sender text, url text, processing_date timestamp)')
+OUTPUT_DIR = path.abspath('.')
 
 
 def main():
-    # retrieve OAuth tokens
+    parser = SafeConfigParser()
+    parser.read(CONF)
+
+    if not parser.has_section('rdcli') or not parser.has_section('hawkeye'):
+        write_configuration_file()
+        parser.read(CONF)
+
+    # retrieve OAuth token
+    oauth_token = parser.get('hawkeye', 'oauth_token')
+    oauth_token_secret = parser.get('hawkeye', 'oauth_token_secret')
+    rd_user = parser.get('rdcli', 'username')
+    rd_password = parser.get('rdcli', 'password')
+
+    rd_worker = RDWorker(RDCLI_COOKIE, CONF)
+
     try:
-        oauth_token, oauth_token_secret = twitter.read_token_file(CONF)
-    except BaseException:
-        try:
-            oauth_token, oauth_token_secret = twitter.oauth_dance(APP_NAME, CONSUMER_KEY, CONSUMER_SECRET, CONF)
-        except Exception:
-            exit('Unable to get OAuth tokens')
+        rd_worker.login({'user': rd_user, 'pass': rd_password})
+    except Exception as e:
+        exit('Unable to log into Real-Debrid: %s' % str(e))
 
     # twitter API client
     client = twitter.Twitter(auth=twitter.OAuth(oauth_token, oauth_token_secret, CONSUMER_KEY, CONSUMER_SECRET))
@@ -69,47 +45,75 @@ def main():
 
         # get the ID of the last processed DM
         try:
-            cursor.execute("""SELECT ID as "id [integer]" FROM refs
-            WHERE processing_date = (SELECT MAX(processing_date) FROM refs)""")
+            cursor.execute("SELECT tweet_id FROM refs WHERE processing_date = (SELECT MAX(processing_date) FROM refs)")
             last_processed_dm = cursor.fetchone()
         except sqlite3.OperationalError:
             initialize_db()
 
         count = 0
         links = []
+
+        if type(last_processed_dm) == tuple:
+            last_processed_dm = last_processed_dm[0]
+
+        # go through all the DMs
         for dm in client.direct_messages():
+
+            # save a reference to the last processed DMs
             if count == 0:
                 count += 1
-                cursor.execute("""INSERT INTO refs VALUES(?, ?, ?)""",
-                               (dm['id'], datetime.strptime(dm['created_at'], '%a %b %d %H:%M:%S +0000 %Y'), datetime.now()))
+                values = (dm['id'], datetime.strptime(dm['created_at'], '%a %b %d %H:%M:%S +0000 %Y'), datetime.now())
+                cursor.execute("INSERT OR REPLACE INTO refs VALUES(?, ?, ?)", values)
+                connection.commit()
 
             if dm['id'] == last_processed_dm:
                 break
 
-            if len(dm['entities']['hashtags']) and len(dm['entities']['urls']):
+            if len(dm['entities']['urls']):
                 for url in dm['entities']['urls']:
                     links.append((dm['sender_screen_name'], url['expanded_url']))
 
-        rd_worker = RDWorker.RDWorker(RDCLI_COOKIE, RDCLI_CONF)
+        # sort chronologically
+        links.reverse()
 
-        for link in links.reverse():
+        print links
+
+        for link in links:
             try:
-                target = rd_worker.unrestrict(link)
+                target = rd_worker.unrestrict(link[1])
                 filename = rd_worker.get_filename_from_url(target)
                 fullpath = path.join(OUTPUT_DIR, filename)
 
-                stream = urlopen(target )
+                stream = urlopen(target)
+
+                print 'downloading', filename
 
                 with open(fullpath, 'wb') as output:
                     while True:
                         content = stream.read(10240)  # 10 KB
-                        if not buffer:
+                        if not content:
                             break
                         else:
                             output.write(content)
                     stream.close()
+
+                msg = '%s downloaded @ %s' % (filename, datetime.now().strftime('%d/%m/%y %H:%M:%S'))
+            except UnrestrictionError as e:
+                if e.code in UnrestrictionError.fixable_errors():
+                    cursor.execute('INSERT INTO failed(url, processing_date) VALUES(?, ?)', (link[1], datetime.now()))
+                    connection.commit()
+                    msg = 'Will retry %s later (%s)' % (link[1], e.message)
+                else:
+                    msg = '%s error %i: %s ' % (link[1], e.code, e.message)
             except Exception as e:
-                error = str(e)
+                try:
+                    name = filename
+                except UnboundLocalError:
+                    name = link[1]
+                msg = '%s error: %s ' % (name, str(e))
+
+            print msg
+            client.direct_messages.new(user=link[0], text=msg)
 
     exit(0)
 
@@ -118,3 +122,4 @@ if __name__ == '__main__':
     main()
 
 # check if output dir exists
+# whitelist users

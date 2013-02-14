@@ -132,3 +132,4 @@ if __name__ == '__main__':
 
 # check if output dir exists
 # whitelist users
+# test index conflict in SQLITE

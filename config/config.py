@@ -71,4 +71,6 @@ def initialize_db():
         cursor.execute('DROP TABLE IF EXISTS failed')
 
         cursor.execute('CREATE TABLE refs(tweet_id INT, creation_date timestamp, processing_date timestamp)')
-        cursor.execute('CREATE TABLE failed(sender text, url text, processing_date timestamp)')
+        cursor.execute('CREATE TABLE failed(sender text, url text, processing_date timestamp, '
+                       'UNIQUE (sender, text) ON CONFLICT REPLACE )')
+        cursor.execute('CREATE INDEX ON failed (sender, url)')

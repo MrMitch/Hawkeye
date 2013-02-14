@@ -43,18 +43,62 @@ def main():
         cursor = connection.cursor()
         last_processed_dm = 0
 
-        # get the ID of the last processed DM
+        # get the ID of the previously last processed DM
         try:
             cursor.execute("SELECT tweet_id FROM refs WHERE processing_date = (SELECT MAX(processing_date) FROM refs)")
             last_processed_dm = cursor.fetchone()
         except sqlite3.OperationalError:
             initialize_db()
 
-        count = 0
-        links = []
-
         if type(last_processed_dm) == tuple:
             last_processed_dm = last_processed_dm[0]
+
+        def download(link, cur=cursor, conn=connection):
+            """
+            Utility function to download a file
+            """
+            try:
+                target = rd_worker.unrestrict(link[1])
+                filename = rd_worker.get_filename_from_url(target)
+                fullpath = path.join(OUTPUT_DIR, filename)
+
+                stream = urlopen(target)
+
+                with open(fullpath, 'wb') as output:
+                    while True:
+                        content = stream.read(10240)  # 10 KB
+                        if not content:
+                            break
+                        else:
+                            output.write(content)
+                    stream.close()
+
+                msg = '%s downloaded @ %s' % (filename, datetime.now().strftime('%d/%m/%y %H:%M:%S'))
+            except UnrestrictionError as e:
+                if e.code in UnrestrictionError.fixable_errors():
+                    cur.execute('INSERT INTO failed VALUES(?, ?, ?)', (link[0], link[1], datetime.now()))
+                    conn.commit()
+                    msg = 'Will retry %s later (%s)' % (link[1], e.message)
+                else:
+                    msg = '%s error %i: %s ' % (link[1], e.code, e.message)
+                    cur.execute('DELETE FROM failed WHERE sender = ? AND url = ?', (link[0], link[1]))
+                    conn.commit()
+            except Exception as e:
+                try:
+                    name = filename
+                except UnboundLocalError:
+                    name = link[1]
+                msg = '%s error: %s ' % (name, str(e))
+
+            return msg
+
+        # try to download the previously failed downloads
+        for row in cursor.execute('SELECT sender, url FROM failed ORDER BY processing_date ASC'):
+            msg = download(row[1])
+            client.direct_messages.new(user=row[0], text=msg)
+
+        count = 0
+        links = []
 
         # go through all the DMs
         for dm in client.direct_messages():
@@ -76,43 +120,8 @@ def main():
         # sort chronologically
         links.reverse()
 
-        print links
-
         for link in links:
-            try:
-                target = rd_worker.unrestrict(link[1])
-                filename = rd_worker.get_filename_from_url(target)
-                fullpath = path.join(OUTPUT_DIR, filename)
-
-                stream = urlopen(target)
-
-                print 'downloading', filename
-
-                with open(fullpath, 'wb') as output:
-                    while True:
-                        content = stream.read(10240)  # 10 KB
-                        if not content:
-                            break
-                        else:
-                            output.write(content)
-                    stream.close()
-
-                msg = '%s downloaded @ %s' % (filename, datetime.now().strftime('%d/%m/%y %H:%M:%S'))
-            except UnrestrictionError as e:
-                if e.code in UnrestrictionError.fixable_errors():
-                    cursor.execute('INSERT INTO failed(url, processing_date) VALUES(?, ?)', (link[1], datetime.now()))
-                    connection.commit()
-                    msg = 'Will retry %s later (%s)' % (link[1], e.message)
-                else:
-                    msg = '%s error %i: %s ' % (link[1], e.code, e.message)
-            except Exception as e:
-                try:
-                    name = filename
-                except UnboundLocalError:
-                    name = link[1]
-                msg = '%s error: %s ' % (name, str(e))
-
-            print msg
+            msg = download(link)
             client.direct_messages.new(user=link[0], text=msg)
 
     exit(0)

@@ -78,7 +78,7 @@ def main():
                 if e.code in UnrestrictionError.fixable_errors():
                     cur.execute('INSERT INTO failed VALUES(?, ?, ?)', (link[0], link[1], datetime.now()))
                     conn.commit()
-                    msg = 'Will retry %s later (%s)' % (link[1], e.message)
+                    msg = 'Failed %s, will retry later (%s)' % (link[1], e.message)
                 else:
                     msg = '%s error %i: %s ' % (link[1], e.code, e.message)
                     cur.execute('DELETE FROM failed WHERE sender = ? AND url = ?', (link[0], link[1]))
@@ -95,7 +95,14 @@ def main():
         # try to download the previously failed downloads
         for row in cursor.execute('SELECT sender, url FROM failed ORDER BY processing_date ASC'):
             msg = download(row[1])
-            client.direct_messages.new(user=row[0], text=msg)
+            try:
+                client.direct_messages.new(user=row[0], text=msg)
+            except twitter.TwitterError:
+                try:
+                    msg = '%s %s' % (datetime.now().strftime('%d/%m %H:%M:%S'), msg)
+                    client.direct_messages.new(user=row[0], text=msg)
+                except twitter.TwitterError:
+                    pass
 
         count = 0
         links = []
@@ -120,9 +127,17 @@ def main():
         # sort chronologically
         links.reverse()
 
+        # try to download the new links
         for link in links:
             msg = download(link)
-            client.direct_messages.new(user=link[0], text=msg)
+            try:
+                client.direct_messages.new(user=row[0], text=msg)
+            except twitter.TwitterError:
+                try:
+                    msg = '%s %s' % (datetime.now().strftime('%d/%m %H:%M:%S'), msg)
+                    client.direct_messages.new(user=row[0], text=msg)
+                except twitter.TwitterError:
+                    pass
 
     exit(0)
 
@@ -133,3 +148,4 @@ if __name__ == '__main__':
 # check if output dir exists
 # whitelist users
 # test index conflict in SQLITE
+# move config file to fucking JSON

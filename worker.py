@@ -113,7 +113,7 @@ def main():
             # save a reference to the last processed DMs
             if count == 0:
                 count += 1
-                values = (dm['id'], datetime.strptime(dm['created_at'], '%a %b %d %H:%M:%S +0000 %Y'), datetime.now())
+                values = (dm['id'], datetime.strptime(dm['created_at'], '%a %b %d %H:%M:%S %z %Y'), datetime.now())
                 cursor.execute("INSERT OR REPLACE INTO refs VALUES(?, ?, ?)", values)
                 connection.commit()
 

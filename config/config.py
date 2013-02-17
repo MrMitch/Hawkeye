@@ -1,8 +1,8 @@
-from ConfigParser import SafeConfigParser
+from json import dump
 import twitter
 from os import path
 import sqlite3
-from rdcli import RDWorker
+from rdcli import ask_credentials
 
 BASE = path.join(path.abspath(path.expanduser(u'~')), '.config', 'hawkeye')
 BASE = path.join(path.abspath(path.expanduser('./')))
@@ -46,21 +46,21 @@ def _oauth_dance():
 
 def write_configuration_file():
     oauth_token, oauth_token_secret = _oauth_dance()
+    rd_user, rd_password = ask_credentials()
 
-    parser = SafeConfigParser()
-    parser.add_section('hawkeye')
-    parser.set('hawkeye', 'oauth_token', oauth_token)
-    parser.set('hawkeye', 'oauth_token_secret', oauth_token_secret)
+    conf = {
+        'real-debrid': {
+            'username': rd_user,
+            'password': rd_password
+        },
+        'oauth': {
+            'token': oauth_token,
+            'token_secret': oauth_token_secret
+        }
+    }
 
-    rd_worker = RDWorker(RDCLI_COOKIE, CONF)
-    rd_info = rd_worker.ask_credentials()
-
-    parser.add_section('rdcli')
-    parser.set('rdcli', 'username', rd_info['user'])
-    parser.set('rdcli', 'password', rd_info['pass'])
-
-    with open(CONF, 'wb') as conf:
-        parser.write(conf)
+    with open(CONF, 'wb') as output:
+        dump(conf, output, indent=4)
 
 
 def initialize_db():

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from ConfigParser import SafeConfigParser
+from json import load
 from os import path
 import sqlite3
 from datetime import datetime
@@ -15,23 +15,24 @@ OUTPUT_DIR = path.abspath('.')
 
 
 def main():
-    parser = SafeConfigParser()
-    parser.read(CONF)
-
-    if not parser.has_section('rdcli') or not parser.has_section('hawkeye'):
-        write_configuration_file()
-        parser.read(CONF)
-
-    # retrieve OAuth token
-    oauth_token = parser.get('hawkeye', 'oauth_token')
-    oauth_token_secret = parser.get('hawkeye', 'oauth_token_secret')
-    rd_user = parser.get('rdcli', 'username')
-    rd_password = parser.get('rdcli', 'password')
-
-    rd_worker = RDWorker(RDCLI_COOKIE, CONF)
 
     try:
-        rd_worker.login({'user': rd_user, 'pass': rd_password})
+        with open(CONF, 'r') as conf:
+            obj = load(conf)
+            oauth_token = obj['oauth']['token']
+            oauth_token_secret = obj['oauth']['token_secret']
+            rd_user = obj['real-debrid']['username']
+            rd_password = obj['real-debrid']['password']
+    except BaseException:
+        try:
+            write_configuration_file()
+        except BaseException as e:
+            exit('Unable to write configuration file')
+
+    rd_worker = RDWorker(RDCLI_COOKIE)
+
+    try:
+        rd_worker.login(rd_user, rd_password)
     except Exception as e:
         exit('Unable to log into Real-Debrid: %s' % str(e))
 
@@ -148,4 +149,3 @@ if __name__ == '__main__':
 # check if output dir exists
 # whitelist users
 # test index conflict in SQLITE
-# move config file to fucking JSON

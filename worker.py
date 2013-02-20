@@ -18,16 +18,17 @@ def main():
 
     try:
         with open(CONF, 'r') as conf:
-            obj = load(conf)
-            oauth_token = obj['oauth']['token']
-            oauth_token_secret = obj['oauth']['token_secret']
-            rd_user = obj['real-debrid']['username']
-            rd_password = obj['real-debrid']['password']
+            options = load(conf)
+            oauth_token = options['oauth']['token']
+            oauth_token_secret = options['oauth']['token_secret']
+            rd_user = options['real-debrid']['username']
+            rd_password = options['real-debrid']['password']
+            whitelist = options['hawkeye']['whitelist']
     except BaseException:
         try:
             write_configuration_file()
         except BaseException as e:
-            exit('Unable to write configuration file')
+            exit('Unable to write configuration file: %s' % str(e))
 
     rd_worker = RDWorker(RDCLI_COOKIE)
 
@@ -94,16 +95,18 @@ def main():
             return msg
 
         # try to download the previously failed downloads
-        for row in cursor.execute('SELECT sender, url FROM failed ORDER BY processing_date ASC'):
-            msg = download(row[1])
-            try:
-                client.direct_messages.new(user=row[0], text=msg)
-            except twitter.TwitterError:
+        for info in cursor.execute('SELECT sender, url FROM failed ORDER BY processing_date ASC'):
+
+            if info[0] in whitelist:
+                msg = download(info[1])
                 try:
-                    msg = '%s %s' % (datetime.now().strftime('%d/%m %H:%M:%S'), msg)
-                    client.direct_messages.new(user=row[0], text=msg)
+                    client.direct_messages.new(user=info[0], text=msg)
                 except twitter.TwitterError:
-                    pass
+                    try:
+                        msg = '%s %s' % (datetime.now().strftime('%d/%m %H:%M:%S'), msg)
+                        client.direct_messages.new(user=info[0], text=msg)
+                    except twitter.TwitterError:
+                        pass
 
         count = 0
         links = []
@@ -130,15 +133,16 @@ def main():
 
         # try to download the new links
         for link in links:
-            msg = download(link)
-            try:
-                client.direct_messages.new(user=row[0], text=msg)
-            except twitter.TwitterError:
+            if link[0] in whitelist:
+                msg = download(link)
                 try:
-                    msg = '%s %s' % (datetime.now().strftime('%d/%m %H:%M:%S'), msg)
-                    client.direct_messages.new(user=row[0], text=msg)
+                    client.direct_messages.new(user=link[0], text=msg)
                 except twitter.TwitterError:
-                    pass
+                    try:
+                        msg = '%s %s' % (datetime.now().strftime('%d/%m %H:%M:%S'), msg)
+                        client.direct_messages.new(user=link[0], text=msg)
+                    except twitter.TwitterError:
+                        pass
 
     exit(0)
 
@@ -147,5 +151,4 @@ if __name__ == '__main__':
     main()
 
 # check if output dir exists
-# whitelist users
 # test index conflict in SQLITE

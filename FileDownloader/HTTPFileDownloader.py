@@ -9,27 +9,23 @@ class HTTPFileDownloader(FileDownloader):
         super(HTTPFileDownloader, self).__init__()
 
     def download(self, url, destination):
-        fullpath = path.join(destination, 'test')
-        try:
-            opener = build_opener()
-            stream = opener.open(url)
+        opener = build_opener()
+        stream = opener.open(url)
 
-            with open(fullpath, 'wb') as output:
-                while True:
-                    try:
-                        content = stream.read(10240)  # 10 KB
+        fullpath = path.expanduser(path.join(destination, self.extract_filename(stream.geturl())))
 
-                        if not content:
-                            break
+        with open(fullpath, 'wb') as output:
+            while True:
+                try:
+                    content = stream.read(10240)  # 10 KB
 
-                        output.write(content)
-                    except KeyboardInterrupt:
+                    if not content:
                         break
 
-                stream.close()
+                    output.write(content)
+                except KeyboardInterrupt:
+                    break
 
-        except BaseException as e:
-            print str(e)
+            stream.close()
 
-    def parse_options(self, options):
-        pass
+        return fullpath

@@ -12,7 +12,6 @@ class RealDebridFileDownloader(HTTPFileDownloader):
 
     def download(self, url, destination):
         link = self.rd_worker.unrestrict(url)
-        print "RealDebridFileDownloader"
         return self.__download(link, destination)
 
     def parse_options(self, options):

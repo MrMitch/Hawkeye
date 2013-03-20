@@ -3,3 +3,4 @@
 *.conf
 *.db
 *.cookie
+test.py

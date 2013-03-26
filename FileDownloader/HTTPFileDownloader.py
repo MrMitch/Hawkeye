@@ -18,7 +18,6 @@ class HTTPFileDownloader(FileDownloader):
         if not filename:
             filename = self.extract_filename(stream.geturl())
 
-        print "HTTP: ", url, path.join(fullpath, filename)
         downloaded, headers = urlretrieve(url, path.join(fullpath, filename))
 
         return downloaded

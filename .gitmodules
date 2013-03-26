@@ -1,6 +1,6 @@
-[submodule "rdcli"]
-	path = rdcli
+[submodule "modules/rdcli"]
+	path = modules/rdcli
 	url = git://github.com/MrMitch/realdebrid-CLI.git
-[submodule "twitter"]
-	path = twitter
+[submodule "modules/twitter"]
+	path = modules/twitter
 	url = git://github.com/sixohsix/twitter.git

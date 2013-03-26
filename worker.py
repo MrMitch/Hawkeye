@@ -6,10 +6,12 @@ from os import path
 import sqlite3
 from datetime import datetime
 from urllib2 import urlopen
-from rdcli import RDWorker, UnrestrictionError
-import twitter
 
+import modules.twitter_api as twitter
+
+from modules.rdcli import RDWorker, UnrestrictionError
 from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, RDCLI_COOKIE, SQLITE, write_configuration_file, initialize_db
+
 
 OUTPUT_DIR = path.abspath('.')
 

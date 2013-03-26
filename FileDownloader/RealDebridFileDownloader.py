@@ -1,18 +1,21 @@
 from HTTPFileDownloader import HTTPFileDownloader
-from rdcli import RDWorker, LoginError
+from modules.rdcli import RDWorker, LoginError
 
 
 class RealDebridFileDownloader(HTTPFileDownloader):
 
-    def __init__(self):
-        super(RealDebridFileDownloader, self).__init__()
+    def __init__(self, options):
+        super(RealDebridFileDownloader, self).__init__(options)
 
-    def __download(self, url, destination):
-        return HTTPFileDownloader.download(self, url, destination)
+    def download(self, url, output_directory, filename=None):
+        link, _filename = self.rd_worker.unrestrict(url)
 
-    def download(self, url, destination):
-        link = self.rd_worker.unrestrict(url)
-        return self.__download(link, destination)
+        if not filename:
+            filename = _filename
+
+        downloaded, headers = super(RealDebridFileDownloader, self).download(link, output_directory, filename)
+
+        return downloaded
 
     def parse_options(self, options):
         self.rd_worker = RDWorker(options['cookie_file'])

@@ -1,31 +1,24 @@
 from FileDownloader import FileDownloader
+from urllib import urlretrieve
 from urllib2 import build_opener
 from os import path
 
 
 class HTTPFileDownloader(FileDownloader):
 
-    def __init__(self):
-        super(HTTPFileDownloader, self).__init__()
+    def __init__(self, options=None):
+        super(HTTPFileDownloader, self).__init__(options)
 
-    def download(self, url, destination):
+    def download(self, url, output_directory, filename=None):
         opener = build_opener()
         stream = opener.open(url)
 
-        fullpath = path.expanduser(path.join(destination, self.extract_filename(stream.geturl())))
+        fullpath = path.abspath(path.expanduser(output_directory))
 
-        with open(fullpath, 'wb') as output:
-            while True:
-                try:
-                    content = stream.read(10240)  # 10 KB
+        if not filename:
+            filename = self.extract_filename(stream.geturl())
 
-                    if not content:
-                        break
+        print "HTTP: ", url, path.join(fullpath, filename)
+        downloaded, headers = urlretrieve(url, path.join(fullpath, filename))
 
-                    output.write(content)
-                except KeyboardInterrupt:
-                    break
-
-            stream.close()
-
-        return fullpath
+        return downloaded

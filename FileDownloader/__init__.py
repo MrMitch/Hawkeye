@@ -1,20 +1,21 @@
+from urllib import unquote
 from urlparse import urlparse
 
 
 class FileDownloader(object):
 
     def __init__(self, options=None):
-        super(object, self).__init__()
+        super(FileDownloader, self).__init__()
         self.parse_options(options)
 
     def parse_options(self, options):
         pass
 
-    def download(self, url, destination):
+    def download(self, url, output_directory, filename=None):
         pass
 
     def extract_filename(self, url):
-        return urlparse(url).path.split('/')[-1]
+        return unquote(urlparse(url).path.split('/')[-1])
 
 
 class DownloaderFactory:

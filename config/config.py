@@ -1,10 +1,11 @@
 from json import dump
-import twitter
 from os import path
 import sqlite3
-from rdcli import ask_credentials
+import modules.twitter_api as twitter
+from modules.rdcli import ask_credentials
 
-BASE = path.join(path.abspath(path.expanduser(u'~')), '.config', 'hawkeye')
+
+BASE = path.join(path.abspath(path.expanduser('~')), '.config', 'hawkeye')
 BASE = path.join(path.abspath(path.expanduser('./')))
 CONF = path.join(BASE, 'hawkeye.conf')
 SQLITE = path.join(BASE, 'hawkeye.db')

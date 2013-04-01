@@ -3,13 +3,11 @@
 
 from json import load
 from os import path
-import sqlite3
-from datetime import datetime
-from urllib2 import urlopen
-
+import logging
+from commands.repository import registered_commands
+from commands import Executor, registry
 import modules.twitter_api as twitter
 
-from modules.rdcli import RDWorker, UnrestrictionError
 from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, RDCLI_COOKIE, SQLITE, write_configuration_file, initialize_db
 
 
@@ -18,139 +16,65 @@ OUTPUT_DIR = path.abspath('.')
 
 def main():
 
+    # configure error logging
+    logging.basicConfig(filename="/var/log/hawkeye/hawkeye.log", level=logging.INFO,
+                        format='%(asctime)s [%(levelname)s]: %(message)s')
+
+    # retrieve configuration
     try:
-        with open(CONF, 'r') as conf:
-            options = load(conf)
-            oauth_token = options['oauth']['token']
-            oauth_token_secret = options['oauth']['token_secret']
-            rd_user = options['real-debrid']['username']
-            rd_password = options['real-debrid']['password']
-            whitelist = options['hawkeye']['whitelist']
-    except BaseException:
-        try:
-            write_configuration_file()
-        except BaseException as e:
-            exit('Unable to write configuration file: %s' % str(e))
+        with open(CONF, 'r') as conf_file:
+            full_config = load(conf_file)
+            app_config = full_config['hawkeye']
+    except KeyError as e:
+        logging.critical('Missing configuration section: %s' % str(e))
+        exit(1)
+    except IOError as e:
+        logging.critical('Error trying to read configuration file: %s' % str(e))
+        exit(1)
 
-    rd_worker = RDWorker(RDCLI_COOKIE)
+    # register all commands
+    for command in registered_commands:
+        logging.info("Registering %s command" % command[0])
+        registry.register(command[0], command[1])
 
-    try:
-        rd_worker.login(rd_user, rd_password)
-    except Exception as e:
-        exit('Unable to log into Real-Debrid: %s' % str(e))
+    logging.info("Hawkeye's started")
 
-    # twitter API client
-    client = twitter.Twitter(auth=twitter.OAuth(oauth_token, oauth_token_secret, CONSUMER_KEY, CONSUMER_SECRET))
+    # configure twitter clients (stream + classic)
+    auth = twitter.OAuth(app_config['oauth_token'], app_config['oauth_token_secret'], CONSUMER_KEY, CONSUMER_SECRET)
+    client = twitter.Twitter(auth=auth)
+    stream = twitter.TwitterStream(api_version=1.1, domain='userstream.twitter.com', auth=auth).user()
 
-    # open sqlite3 connection
-    with sqlite3.connect(SQLITE, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES) as connection:
-        cursor = connection.cursor()
-        last_processed_dm = 0
+    executor = Executor()
 
-        # get the ID of the previously last processed DM
-        try:
-            cursor.execute("SELECT tweet_id FROM refs WHERE processing_date = (SELECT MAX(processing_date) FROM refs)")
-            last_processed_dm = cursor.fetchone()
-        except sqlite3.OperationalError:
-            initialize_db()
+    # tweet processing, main loop
+    for t in stream:
 
-        if type(last_processed_dm) == tuple:
-            last_processed_dm = last_processed_dm[0]
+        # we only want tweets or DMs
+        if t.get('direct_message') or t.get('text'):
+            if t.get('direct_message'):
+                tweet = t['direct_message']
+            else:
+                tweet = t
 
-        def download(link, cur=cursor, conn=connection):
-            """
-            Utility function to download a file
-            """
+            # if the message doesn't start with a hashtaged command name, use the default command
+            if tweet['text'].strip()[0] is not '#':
+                command_name = app_config["default_command"]
+            else:
+                command_name = tweet['entities']['hashtags'][0]['text']
+
             try:
-                target = rd_worker.unrestrict(link[1])
-                filename = rd_worker.get_filename_from_url(target)
-                fullpath = path.join(OUTPUT_DIR, filename)
+                command_options = full_config[command_name]
+            except KeyError:
+                command_options = []
 
-                stream = urlopen(target)
+            # load the command w/ its options
+            executor.load(command_name, command_options)
+            # launch the command !
+            executor.launch(tweet, client)
 
-                with open(fullpath, 'wb') as output:
-                    while True:
-                        content = stream.read(10240)  # 10 KB
-                        if not content:
-                            break
-                        else:
-                            output.write(content)
-                    stream.close()
-
-                msg = '%s downloaded @ %s' % (filename, datetime.now().strftime('%d/%m/%y %H:%M:%S'))
-            except UnrestrictionError as e:
-                if e.code in UnrestrictionError.fixable_errors():
-                    cur.execute('INSERT INTO failed VALUES(?, ?, ?)', (link[0], link[1], datetime.now()))
-                    conn.commit()
-                    msg = 'Failed %s, will retry later (%s)' % (link[1], e.message)
-                else:
-                    msg = '%s error %i: %s ' % (link[1], e.code, e.message)
-                    cur.execute('DELETE FROM failed WHERE sender = ? AND url = ?', (link[0], link[1]))
-                    conn.commit()
-            except Exception as e:
-                try:
-                    name = filename
-                except UnboundLocalError:
-                    name = link[1]
-                msg = '%s error: %s ' % (name, str(e))
-
-            return msg
-
-        # try to download the previously failed downloads
-        for info in cursor.execute('SELECT sender, url FROM failed ORDER BY processing_date ASC'):
-
-            if info[0] in whitelist:
-                msg = download(info[1])
-                try:
-                    client.direct_messages.new(user=info[0], text=msg)
-                except twitter.TwitterError:
-                    try:
-                        msg = '%s %s' % (datetime.now().strftime('%d/%m %H:%M:%S'), msg)
-                        client.direct_messages.new(user=info[0], text=msg)
-                    except twitter.TwitterError:
-                        pass
-
-        count = 0
-        links = []
-
-        # go through all the DMs
-        for dm in client.direct_messages():
-
-            # save a reference to the last processed DMs
-            if count == 0:
-                count += 1
-                values = (dm['id'], datetime.strptime(dm['created_at'], '%a %b %d %H:%M:%S %z %Y'), datetime.now())
-                cursor.execute("INSERT OR REPLACE INTO refs VALUES(?, ?, ?)", values)
-                connection.commit()
-
-            if dm['id'] == last_processed_dm:
-                break
-
-            if len(dm['entities']['urls']):
-                for url in dm['entities']['urls']:
-                    links.append((dm['sender_screen_name'], url['expanded_url']))
-
-        # sort chronologically
-        links.reverse()
-
-        # try to download the new links
-        for link in links:
-            if link[0] in whitelist:
-                msg = download(link)
-                try:
-                    client.direct_messages.new(user=link[0], text=msg)
-                except twitter.TwitterError:
-                    try:
-                        msg = '%s %s' % (datetime.now().strftime('%d/%m %H:%M:%S'), msg)
-                        client.direct_messages.new(user=link[0], text=msg)
-                    except twitter.TwitterError:
-                        pass
-
-    exit(0)
-
+    return
 
 if __name__ == '__main__':
     main()
 
 # check if output dir exists
-# test index conflict in SQLITE

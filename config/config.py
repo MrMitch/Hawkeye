@@ -7,7 +7,7 @@ from modules.rdcli import ask_credentials
 
 BASE = path.join(path.abspath(path.expanduser('~')), '.config', 'hawkeye')
 BASE = path.join(path.abspath(path.expanduser('./')))
-CONF = path.join(BASE, 'hawkeye.conf')
+CONF = path.join(BASE, 'hawkeye.conf.json')
 SQLITE = path.join(BASE, 'hawkeye.db')
 
 RDCLI_COOKIE = path.join(BASE, 'rdcli.cookie')

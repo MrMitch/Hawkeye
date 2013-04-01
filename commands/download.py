@@ -11,6 +11,7 @@ class HTTPDownload(Command):
         self.downloader = HTTPFileDownloader()
         self.pre_hook = self.pre
         self.post_hook = self.post
+        self.message = 'ownloading links sent on %s'
 
     def __notify(self, tweet, client, start=True):
         # datetime.strptime doesn't support %z, hence the +0000 in the string
@@ -20,7 +21,7 @@ class HTTPDownload(Command):
         else:
             t = 'Done d'
 
-        t += 'ownloading links sent on %s' % date.strftime('%Y/%m/%d %H:%M:%S')
+        t += self.message % date.strftime('%Y/%m/%d %H:%M:%S')
 
         client.direct_messages.new(user=tweet['sender_screen_name'], text=t)
 
@@ -40,3 +41,4 @@ class RealDebridDownload(HTTPDownload):
     def __init__(self, options):
         super(RealDebridDownload, self).__init__(options)
         self.downloader = RealDebridFileDownloader(options)
+        self.message = 'ownloading links sent on %s, using Real-Debrid'

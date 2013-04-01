@@ -36,9 +36,7 @@ class RealDebridFileDownloader(HTTPFileDownloader):
         if not filename:
             filename = _filename
 
-        downloaded, headers = super(RealDebridFileDownloader, self).download(link, output_directory, filename)
-
-        return downloaded
+        return super(RealDebridFileDownloader, self).download(link, output_directory, filename)
 
     def parse_options(self, options):
         self.rd_worker = RDWorker(options['cookie_file'])

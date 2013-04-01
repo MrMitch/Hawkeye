@@ -49,28 +49,32 @@ def main():
     # tweet processing, main loop
     for t in stream:
 
-        # we only want tweets or DMs
+        # we only want tweets or DMs that are from whitelisted users
         if t.get('direct_message') or t.get('text'):
+
+            user = 'user'
             if t.get('direct_message'):
                 tweet = t['direct_message']
+                user = 'sender'
             else:
                 tweet = t
 
-            # if the message doesn't start with a hashtaged command name, use the default command
-            if tweet['text'].strip()[0] is not '#':
-                command_name = app_config["default_command"]
-            else:
-                command_name = tweet['entities']['hashtags'][0]['text']
+            if tweet[user]['screen_name'] in app_config['whitelist']:
+                # if the message doesn't start with a hashtaged command name, use the default command
+                if tweet['text'].strip()[0] is not '#':
+                    command_name = app_config["default_command"]
+                else:
+                    command_name = tweet['entities']['hashtags'][0]['text']
 
-            try:
-                command_options = full_config[command_name]
-            except KeyError:
-                command_options = []
+                try:
+                    command_options = full_config[command_name]
+                except KeyError:
+                    command_options = []
 
-            # load the command w/ its options
-            executor.load(command_name, command_options)
-            # launch the command !
-            executor.launch(tweet, client)
+                # load the command w/ its options
+                executor.load(command_name, command_options)
+                # launch the command !
+                executor.launch(tweet, client)
 
     return
 

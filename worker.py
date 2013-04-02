@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from config import CONF, CONSUMER_KEY, CONSUMER_SECRET
+from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, APP_NAME
 from commands import Executor
 from commands.repository import registered_commands
 from json import load
@@ -32,7 +32,7 @@ def main():
         logging.info("Registering %s command" % command[0])
         Executor.commands.register(command[0], command[1])
 
-    logging.info("Hawkeye's started")
+    logging.info("%s's started" % APP_NAME)
 
     # configure twitter clients (stream + classic)
     auth = twitter.OAuth(app_config['oauth_token'], app_config['oauth_token_secret'], CONSUMER_KEY, CONSUMER_SECRET)

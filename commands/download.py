@@ -42,4 +42,4 @@ class RealDebridDownload(HTTPDownload):
     def __init__(self, options):
         super(RealDebridDownload, self).__init__(options)
         self.downloader = RealDebridFileDownloader(options)
-        self.message = 'ownloading links sent on %s, using Real-Debrid'
+        self.message += ', using Real-Debrid'

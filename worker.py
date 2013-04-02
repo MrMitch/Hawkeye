@@ -60,8 +60,9 @@ def main():
                 tweet = t
 
             if tweet[user]['screen_name'] in app_config['whitelist']:
-                # if the message doesn't start with a hashtaged command name, use the default command
-                if tweet['text'].strip()[0] != '#':
+
+                # the command name is the first hastag, or the default one if no hastags
+                if tweet['entities']['hashtags'].count == 0:
                     command_name = app_config["default_command"]
                 else:
                     command_name = tweet['entities']['hashtags'][0]['text']

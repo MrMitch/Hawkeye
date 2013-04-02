@@ -70,7 +70,7 @@ class Executor(object):
         self.result = None
         self.command = Executor.commands.get(command_name, command_options)
 
-    def launch(self, tweet, twitter_client):
+    def process(self, tweet, twitter_client):
 
         try:
             if self.command.pre_hook is not None:

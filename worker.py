@@ -8,7 +8,7 @@ from commands.repository import registered_commands
 from commands import Executor
 import modules.twitter_api as twitter
 
-from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, RDCLI_COOKIE, SQLITE, write_configuration_file, initialize_db
+from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, write_configuration_file
 
 
 OUTPUT_DIR = path.abspath('.')
@@ -52,14 +52,14 @@ def main():
         # we only want tweets or DMs that are from whitelisted users
         if t.get('direct_message') or t.get('text'):
 
-            user = 'user'
+            sender = 'user'
             if t.get('direct_message'):
                 tweet = t['direct_message']
-                user = 'sender'
+                sender = 'sender'
             else:
                 tweet = t
 
-            if tweet[user]['screen_name'] in app_config['whitelist']:
+            if tweet[sender]['screen_name'] in app_config['whitelist']:
 
                 # the command name is the first hastag, or the default one if no hastags
                 if tweet['entities']['hashtags'].count == 0:
@@ -75,7 +75,7 @@ def main():
                 # load the command w/ its options
                 executor.load(command_name, command_options)
                 # launch the command !
-                executor.launch(tweet, client)
+                executor.process(tweet, client)
 
     return
 

@@ -32,8 +32,11 @@ class HTTPDownload(Command):
         self.__notify(tweet, client, False)
 
     def execute(self, tweet):
+        success = []
         for url in tweet['entities']['urls']:
-            self.downloader.download(url['expanded_url'], self.output_dir)
+            success.append(self.downloader.download(url['expanded_url'], self.output_dir))
+
+        return success
 
 
 class RealDebridDownload(HTTPDownload):

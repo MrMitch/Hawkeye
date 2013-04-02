@@ -21,7 +21,6 @@ class HTTPFileDownloader(FileDownloader):
             filename = self.extract_filename(stream.geturl())
 
         downloaded, headers = urlretrieve(url, path.join(fullpath, filename))
-
         return downloaded
 
 

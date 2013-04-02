@@ -36,9 +36,6 @@ class Functor(object):
         return self._function(*_args, **_kwargs)
 
 
-registry = Factory()
-
-
 class Command(object):
 
     def __init__(self, options):
@@ -64,12 +61,14 @@ class CommandPostHookError(BaseException):
 
 class Executor(object):
 
+    commands = Factory()
+
     def __init__(self):
         super(Executor, self).__init__()
 
     def load(self, command_name, command_options):
         self.result = None
-        self.command = registry.get(command_name, command_options)
+        self.command = Executor.commands.get(command_name, command_options)
 
     def launch(self, tweet, twitter_client):
 

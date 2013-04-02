@@ -5,7 +5,7 @@ from json import load
 from os import path
 import logging
 from commands.repository import registered_commands
-from commands import Executor, registry
+from commands import Executor
 import modules.twitter_api as twitter
 
 from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, RDCLI_COOKIE, SQLITE, write_configuration_file, initialize_db
@@ -35,7 +35,7 @@ def main():
     # register all commands
     for command in registered_commands:
         logging.info("Registering %s command" % command[0])
-        registry.register(command[0], command[1])
+        Executor.commands.register(command[0], command[1])
 
     logging.info("Hawkeye's started")
 

@@ -1,6 +1,5 @@
 from json import dump
 from os import path
-import sqlite3
 import modules.twitter_api as twitter
 from modules.rdcli import ask_credentials
 
@@ -8,9 +7,7 @@ from modules.rdcli import ask_credentials
 BASE = path.join(path.abspath(path.expanduser('~')), '.config', 'hawkeye')
 BASE = path.join(path.abspath(path.expanduser('./')))
 CONF = path.join(BASE, 'hawkeye.conf.json')
-SQLITE = path.join(BASE, 'hawkeye.db')
 
-RDCLI_COOKIE = path.join(BASE, 'rdcli.cookie')
 
 APP_NAME = 'Hawkeye Server'
 CONSUMER_KEY = 'OzICYfiYXDZlo41cMBr1yQ'
@@ -62,16 +59,3 @@ def write_configuration_file():
 
     with open(CONF, 'wb') as output:
         dump(conf, output, indent=4)
-
-
-def initialize_db():
-    with sqlite3.connect(SQLITE, detect_types=sqlite3.PARSE_DECLTYPES) as connection:
-        cursor = connection.cursor()
-
-        cursor.execute('DROP TABLE IF EXISTS refs')
-        cursor.execute('DROP TABLE IF EXISTS failed')
-
-        cursor.execute('CREATE TABLE refs(tweet_id INT, creation_date timestamp, processing_date timestamp)')
-        cursor.execute('CREATE TABLE failed(sender text, url text, processing_date timestamp, '
-                       'UNIQUE (sender, text) ON CONFLICT REPLACE )')
-        cursor.execute('CREATE INDEX ON failed (sender, url)')

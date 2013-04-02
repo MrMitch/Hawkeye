@@ -1,17 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from json import load
-from os import path
-import logging
-from commands.repository import registered_commands
+from config import CONF, CONSUMER_KEY, CONSUMER_SECRET
 from commands import Executor
+from commands.repository import registered_commands
+from json import load
+import logging
 import modules.twitter_api as twitter
-
-from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, write_configuration_file
-
-
-OUTPUT_DIR = path.abspath('.')
 
 
 def main():
@@ -44,8 +39,6 @@ def main():
     client = twitter.Twitter(auth=auth)
     stream = twitter.TwitterStream(api_version=1.1, domain='userstream.twitter.com', auth=auth).user()
 
-    executor = Executor()
-
     # tweet processing, main loop
     for t in stream:
 
@@ -62,7 +55,7 @@ def main():
             if tweet[sender]['screen_name'] in app_config['whitelist']:
 
                 # the command name is the first hastag, or the default one if no hastags
-                if tweet['entities']['hashtags'].count == 0:
+                if len(tweet['entities']['hashtags']) == 0:
                     command_name = app_config["default_command"]
                 else:
                     command_name = tweet['entities']['hashtags'][0]['text']
@@ -72,8 +65,14 @@ def main():
                 except KeyError:
                     command_options = []
 
-                # load the command w/ its options
-                executor.load(command_name, command_options)
+                executor = Executor()
+
+                try:
+                    # load the command w/ its options
+                    executor.load(command_name, command_options)
+                except AttributeError:
+                    continue
+
                 # launch the command !
                 executor.process(tweet, client)
 
@@ -81,5 +80,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-# check if output dir exists

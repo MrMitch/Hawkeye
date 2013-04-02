@@ -9,8 +9,6 @@ class HTTPDownload(Command):
         super(HTTPDownload, self).__init__(options)
         self.output_dir = options['output_dir']
         self.downloader = HTTPFileDownloader()
-        self.pre_hook = self.pre
-        self.post_hook = self.post
         self.message = 'ownloading links sent on %s'
 
     def __notify(self, tweet, client, start=True):
@@ -25,10 +23,10 @@ class HTTPDownload(Command):
 
         client.direct_messages.new(user=tweet['sender_screen_name'], text=t)
 
-    def pre(self, tweet, client):
+    def pre_hook(self, tweet, client):
         self.__notify(tweet, client)
 
-    def post(self, result, tweet, client):
+    def post_hook(self, result, tweet, client):
         self.__notify(tweet, client, False)
 
     def execute(self, tweet):

@@ -1,4 +1,5 @@
 import logging
+import threading
 
 
 class Factory(object):
@@ -39,54 +40,95 @@ class Functor(object):
 class Command(object):
 
     def __init__(self, options):
-        self.pre_hook = None
-        self.post_hook = None
         self.options = options
 
     def execute(self, tweet):
         pass
 
 
-class CommandPreHookError(BaseException):
+class CommandError(BaseException):
+    """
+    Base exception for command-related errors
+    """
+
+    def __init__(self, cause):
+        super(CommandError, self).__init__(cause)
+        self.cause = cause
+
+
+class CommandPreHookError(CommandError):
     pass
 
 
-class CommandExecutionError(BaseException):
+class CommandExecutionError(CommandError):
     pass
 
 
-class CommandPostHookError(BaseException):
+class CommandPostHookError(CommandError):
     pass
+
+
+class Error(Command):
+    """
+    Error command, generates errors.
+    """
+
+    def __init__(self, options):
+        super(Error, self).__init__(options)
+
+    # def pre_hook(self, *args):
+    #    raise BaseException('This error is thrown during pre-hook')
+
+    def execute(self, tweet):
+        pass
+        # raise RuntimeError('This error is thrown during execution')
+
+    def post_hook(self, *args):
+        raise RuntimeError('This error is thrown during post-hook')
 
 
 class Executor(object):
 
     commands = Factory()
+    __error_message = '%s during %s command: %s.\nTweet to process was: %s'
 
     def __init__(self):
         super(Executor, self).__init__()
 
     def load(self, command_name, command_options):
-        self.result = None
         self.command = Executor.commands.get(command_name, command_options)
 
-    def process(self, tweet, twitter_client):
+    def __run_command_life_cycle(self, tweet, twitter_client):
+        result = None
+
+        print "%s started" % self.command.__class__.__name__
 
         try:
-            if self.command.pre_hook is not None:
+            try:
                 self.command.pre_hook(tweet, twitter_client)
+            except AttributeError:
+                pass
+            except BaseException as e:
+                raise CommandPreHookError(e)
 
-            self.result = self.command.execute(tweet)
+            try:
+                result = self.command.execute(tweet)
+            except AttributeError:
+                pass
+            except BaseException as e:
+                raise CommandExecutionError(e)
 
-            if self.command.post_hook is not None:
-                self.command.post_hook(self.result, tweet, twitter_client)
+            try:
+                self.command.post_hook(result, tweet, twitter_client)
+            except AttributeError:
+                pass
+            except BaseException as e:
+                raise CommandPostHookError(e)
 
-        except CommandPreHookError as e:
-            logging.error('Error during pre-hook for %s command: %s. Tweet to process was: %s'
-                          % (type(self.command).__name__, str(e), tweet['text']))
-        except CommandExecutionError as e:
-            logging.error('Error during main execution for %s command: %s. Tweet to process was: %s'
-                          % (type(self.command).__name__, str(e), tweet['text']))
-        except CommandPostHookError as e:
-            logging.error('Error during post-hook for %s command: %s. Tweet to process was: %s'
-                          % (type(self.command).__name__, str(e), tweet['text']))
+        except CommandError as e:
+            logging.error(Executor.__error_message % (e.__class__.__name__, self.command.__class__.__name__,
+                                                      str(e.cause), tweet['text']))
+
+    def process(self, tweet, twitter_client):
+        thread = threading.Thread(target=self.__run_command_life_cycle, args=(tweet, twitter_client))
+        thread.start()

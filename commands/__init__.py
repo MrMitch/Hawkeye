@@ -101,8 +101,6 @@ class Executor(object):
     def __run_command_life_cycle(self, tweet, twitter_client):
         result = None
 
-        print "%s started" % self.command.__class__.__name__
-
         try:
             try:
                 self.command.pre_hook(tweet, twitter_client)

@@ -12,7 +12,7 @@ import modules.twitter_api as twitter
 def main():
 
     # configure error logging
-    logging.basicConfig(filename="/var/log/hawkeye/hawkeye.log", level=logging.INFO,
+    logging.basicConfig(filename="./hawkeye.log", level=logging.INFO,
                         format='%(asctime)s [%(levelname)s]: %(message)s')
 
     # retrieve configuration
@@ -59,6 +59,7 @@ def main():
                     command_name = app_config["default_command"]
                 else:
                     command_name = tweet['entities']['hashtags'][0]['text']
+                    del tweet['entities']['hashtags'][0]
 
                 try:
                     command_options = full_config[command_name]

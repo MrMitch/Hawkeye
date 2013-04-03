@@ -92,6 +92,8 @@ class Executor(object):
 
     commands = Factory()
     __error_message = '%s during %s command: %s.\nTweet to process was: %s'
+    client = None
+    client_settings = None
 
     def __init__(self):
         super(Executor, self).__init__()
@@ -99,12 +101,12 @@ class Executor(object):
     def load(self, command_name, command_options):
         self.command = Executor.commands.get(command_name, command_options)
 
-    def __run_command_life_cycle(self, tweet, twitter_client):
+    def __run_command_life_cycle(self, tweet):
         result = None
 
         try:
             try:
-                self.command.pre_hook(tweet, twitter_client)
+                self.command.pre_hook(tweet, Executor.client)
             except AttributeError:
                 pass
             except BaseException as e:
@@ -118,7 +120,7 @@ class Executor(object):
                 raise CommandExecutionError(e)
 
             try:
-                self.command.post_hook(result, tweet, twitter_client)
+                self.command.post_hook(result, tweet, Executor.client)
             except AttributeError:
                 pass
             except BaseException as e:
@@ -128,6 +130,6 @@ class Executor(object):
             logging.error(Executor.__error_message % (e.__class__.__name__, self.command.__class__.__name__,
                                                       str(e.cause), tweet['text']))
 
-    def process(self, tweet, twitter_client):
-        thread = threading.Thread(target=self.__run_command_life_cycle, args=(tweet, twitter_client))
+    def process(self, tweet):
+        thread = threading.Thread(target=self.__run_command_life_cycle, args=(tweet,))
         thread.start()

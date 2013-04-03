@@ -14,7 +14,7 @@ class Log(Command):
 
     def execute(self, tweet):
         try:
-            level = levels[tweet['entities']['hashtags'][0]['text']]
+            level = levels[tweet['entities']['hashtags'][1]['text']]
         except (KeyError, IndexError):
             level = logging.INFO
 

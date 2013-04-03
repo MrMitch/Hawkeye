@@ -1,5 +1,5 @@
-import logging
 from commands import Command
+import logging
 
 levels = {
     'critical': logging.CRITICAL, 'debug': logging.DEBUG, 'error': logging.ERROR,

@@ -1,5 +1,4 @@
 import logging
-from numpy.distutils import command
 import threading
 
 

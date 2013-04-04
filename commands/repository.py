@@ -1,12 +1,13 @@
-from commands import Error, List
+from commands import Error
 from commands.download import HTTPDownload, RealDebridDownload
-from commands.log import Log
+from commands.info import Log, Stats, List
 
 
 registered_commands = [
     ['dl', HTTPDownload],
     ['rd', RealDebridDownload],
     ['commands', List],
+    ['stats', Stats],
     ['log', Log]
     #, ['error', Error]
 ]

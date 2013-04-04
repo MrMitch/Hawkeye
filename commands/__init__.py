@@ -87,22 +87,6 @@ class Error(Command):
         raise RuntimeError('This error is thrown during post-hook')
 
 
-class List(Command):
-
-    def execute(self, tweet):
-        if Executor.allowed is not None:
-            return Executor.allowed
-        return []
-
-    def post_hook(self, result, tweet, client):
-        try:
-            user = tweet['user']['screen_name']
-        except KeyError:
-            user = tweet['sender']['screen_name']
-
-        client.direct_messages.new(user=user, text=', '.join(result))
-
-
 class Executor(object):
 
     allowed = None

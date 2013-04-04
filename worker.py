@@ -31,8 +31,22 @@ def main():
         logging.info("%s is exiting" % APP_NAME)
         exit(1)
 
+    try:
+        optimist = (app_config['command_registering_strategy'] == '-')
+    except KeyError:
+        optimist = False
+
+    if optimist:
+        # keep only the non-listed commands
+        authorized_commands = [registered for registered in registered_commands
+                               if registered[0] not in app_config['commands']]
+    else:
+        # only keep the listed commands
+        authorized_commands = [registered for registered in registered_commands
+                               if registered[0] in app_config['commands']]
+
     # register all commands
-    for command in registered_commands:
+    for command in authorized_commands:
         logging.info("Registering %s command" % command[0])
         Executor.commands.register(command[0], command[1])
 

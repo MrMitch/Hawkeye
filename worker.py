@@ -74,6 +74,7 @@ def main():
                 # tweet
                 else:
                     tweet = t
+                    tweet['sender_screen_name'] = tweet['user']['screen_name']
                     # we want to make sure the tweet is directly addressed to Hawkeye
                     try:
                         mention_name = tweet['entities']['user_mentions'][0]["screen_name"]

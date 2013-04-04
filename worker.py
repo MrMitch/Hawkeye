@@ -38,15 +38,16 @@ def main():
 
     if optimist:
         # keep only the non-listed commands
-        authorized_commands = [registered for registered in registered_commands
-                               if registered[0] not in app_config['commands']]
+        commands = [registered for registered in registered_commands if registered[0] not in app_config['commands']]
     else:
         # only keep the listed commands
-        authorized_commands = [registered for registered in registered_commands
-                               if registered[0] in app_config['commands']]
+        commands = [registered for registered in registered_commands if registered[0] in app_config['commands']]
+
+    authorized_commands = map(lambda c: c[0], commands)
+    denied_commands = [command[0] for command in registered_commands if command not in commands]
 
     # register all commands
-    for command in authorized_commands:
+    for command in commands:
         logging.info("Registering %s command" % command[0])
         Executor.commands.register(command[0], command[1])
 
@@ -90,27 +91,27 @@ def main():
 
                     # the command name is the first hastag, or the default one if no hastags
                     if len(tweet['entities']['hashtags']) == 0:
-                        command_name = app_config["default_command"]
-                        tweet['entities']['hashtags'].append({"indices": [0, 0], "text": command_name})
+                        command = app_config["default_command"]
+                        tweet['entities']['hashtags'].append({"indices": [0, 0], "text": command})
                     else:
-                        command_name = tweet['entities']['hashtags'][0]['text']
+                        command = tweet['entities']['hashtags'][0]['text']
                         # del tweet['entities']['hashtags'][0]
 
-                    try:
-                        command_options = full_config[command_name]
-                    except KeyError:
-                        command_options = None
+                    if command in authorized_commands:
+                        executor = Executor()
+                        try:
+                            options = full_config[command]
+                        except KeyError:
+                            options = None
 
-                    executor = Executor()
-
-                    try:
                         # load the command w/ its options
-                        executor.load(command_name, command_options)
-                    except AttributeError:
-                        continue
+                        executor.load(command, options)
+                        # launch the command !
+                        executor.process(tweet)
+                    else:
+                        if command in denied_commands:
+                            logging.warning("Denied command attempted: %s " % (tweet['text']))
 
-                    # launch the command !
-                    executor.process(tweet)
     except KeyboardInterrupt:
         stream.close()
         logging.info("KeyboardInterrupt caught, %s is exiting" % APP_NAME)

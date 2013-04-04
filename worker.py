@@ -43,8 +43,8 @@ def main():
         # only keep the listed commands
         commands = [registered for registered in registered_commands if registered[0] in app_config['commands']]
 
-    authorized_commands = map(lambda c: c[0], commands)
-    denied_commands = [command[0] for command in registered_commands if command not in commands]
+    Executor.allowed = map(lambda c: c[0], commands)
+    Executor.disallowed = [command[0] for command in registered_commands if command not in commands]
 
     # register all commands
     for command in commands:
@@ -97,7 +97,7 @@ def main():
                         command = tweet['entities']['hashtags'][0]['text']
                         # del tweet['entities']['hashtags'][0]
 
-                    if command in authorized_commands:
+                    if command in Executor.allowed:
                         executor = Executor()
                         try:
                             options = full_config[command]
@@ -109,7 +109,7 @@ def main():
                         # launch the command !
                         executor.process(tweet)
                     else:
-                        if command in denied_commands:
+                        if command in Executor.disallowed:
                             logging.warning("Denied command attempted: %s " % (tweet['text']))
 
     except KeyboardInterrupt:

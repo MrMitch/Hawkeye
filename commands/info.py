@@ -100,7 +100,7 @@ class Stats(Command):
         return stats
 
     def post_hook(self, stats, tweet):
-        return '\n'.join([': '.join((s[0], str(s[1]))) for s in stats]),  # utils.DIRECT_MESSAGE
+        return '\n'.join([': '.join((s[0], str(s[1]))) for s in stats]), utils.DIRECT_MESSAGE
 
 
 class List(Command):

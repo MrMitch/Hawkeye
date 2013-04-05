@@ -1,4 +1,4 @@
-from textwrap import wrap
+from textwrap import TextWrapper
 import modules.twitter_api
 
 TWEET = 0
@@ -22,9 +22,11 @@ class TwitterClient(modules.twitter_api.Twitter):
             response_type = DIRECT_MESSAGE
 
         if response_type == DIRECT_MESSAGE:
-            for l in wrap(response[0], 140):
+            w = TextWrapper(width=140, break_long_words=False, replace_whitespace=False)
+            for l in w.wrap(response[0]):
                 self.direct_messages.new(user=username, text=l)
         else:
-            for l in wrap(response[0], 140 - (len(username) + 2)):
+            w = TextWrapper(width=140 - (len(username) + 2), break_long_words=False, replace_whitespace=False)
+            for l in w.wrap(response[0]):
                 self.statuses.update(status="@%s %s" % (question['user']['screen_name'], l),
                                      in_reply_to_status_id=question['id_str'])

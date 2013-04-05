@@ -74,7 +74,7 @@ class Stats(Command):
                         regex = re.compile(r'^(eth|wlan)')
                         interfaces = [[i[0], float(i[1]), float(i[len(i) - 1])]
                                       for i in lines if regex.match(i[0]) is not None]
-                        stats['traffic'] = ' ; '.join(["%s ▼:%.2f, ▲: %.2f" %
+                        stats['traffic'] = ' ; '.join(["%s ▼: %.2f, ▲: %.2f" %
                                                        (i[0], i[1] / 1073741824, i[2] / 1073741824)
                                                        for i in interfaces])
                     except IOError:

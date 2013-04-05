@@ -27,25 +27,29 @@ class Log(Command):
 class Stats(Command):
 
     def execute(self, tweet):
-        stats = {}
+        stats = []
         try:
             with open("/proc/uptime", 'r') as u:
-                stats['uptime'] = str(timedelta(seconds=float(u.readline().split()[0])))
+                stats.append(('uptime', str(timedelta(seconds=float(u.readline().split()[0])))))
         except IOError:
             pass
 
         try:
             with open("/proc/loadavg", 'r') as l:
-                stats['load'] = ', '.join(l.readline().split()[0:3])
+                stats.append(('load', ', '.join(l.readline().split()[0:3])))
         except IOError:
             pass
 
         try:
             with open("/proc/meminfo", 'r') as m:
                 lines = [l.split()[:2] for l in m.readlines()]
-            infos = ['%s %.3fGo' % (info[0], float(info[1]) / 1048576) for info in lines
+            infos = ['%s %.3f Go' % (info[0], float(info[1]) / 1048576) for info in lines
                      if info[0] in ['MemTotal:', 'MemFree:', 'SwapTotal:', 'SwapFree:']]
-            stats['RAM'] = ', '.join(infos)
+
+            for info in lines:
+                if info[0] in ['MemTotal:', 'MemFree:', 'SwapTotal:', 'SwapFree:']:
+                    stats.append((info[0].replace(':', ''), '%.3f Go' % (float(info[1]) / 1048576)))
+            # stats['RAM'] = ', '.join(infos)
         except IOError:
             pass
 
@@ -58,7 +62,7 @@ class Stats(Command):
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                     s.connect(('8.8.8.8', 9))
-                    stats['ip'] = s.getsockname()[0]
+                    stats.append(('ip', s.getsockname()[0]))
                     s.close()
                 except (socket.error, socket.herror, socket.gaierror, socket.herror, socket.sslerror):
                     pass
@@ -74,9 +78,11 @@ class Stats(Command):
                         regex = re.compile(r'^(eth|wlan)')
                         interfaces = [[i[0], float(i[1]), float(i[len(i) - 1])]
                                       for i in lines if regex.match(i[0]) is not None]
-                        stats['traffic'] = ' ; '.join(["%s ▼: %.2f, ▲: %.2f" %
-                                                       (i[0], i[1] / 1073741824, i[2] / 1073741824)
-                                                       for i in interfaces])
+
+                        for i in interfaces:
+                            stats.append((i[0].replace(':', ''),
+                                          "Down: %.3f Go, Up: %.3f Go" % (i[1] / 1073741824, i[2] / 1073741824)))
+
                     except IOError:
                         pass
 
@@ -84,8 +90,8 @@ class Stats(Command):
                     from os import walk
                     try:
                         regex = re.compile(r'^[0-9]+$')
-                        stats['processes'] = len([dir for dir in walk('/proc', followlinks=False).next()[1]
-                                                  if regex.match(dir)])
+                        stats.append(('processes', len([dir for dir in walk('/proc', followlinks=False).next()[1]
+                                                        if regex.match(dir)])))
                     except StopIteration:
                         pass
 
@@ -94,7 +100,7 @@ class Stats(Command):
         return stats
 
     def post_hook(self, stats, tweet):
-        return '\n'.join(['='.join((name, str(value))) for name, value in stats.iteritems()]), utils.DIRECT_MESSAGE
+        return '\n'.join([': '.join((s[0], str(s[1]))) for s in stats]),  # utils.DIRECT_MESSAGE
 
 
 class List(Command):

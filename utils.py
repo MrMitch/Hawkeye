@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from textwrap import TextWrapper
 import modules.twitter_api
 
@@ -28,5 +29,8 @@ class TwitterClient(modules.twitter_api.Twitter):
         else:
             w = TextWrapper(width=140 - (len(username) + 2), break_long_words=False, replace_whitespace=False)
             for l in w.wrap(response[0]):
-                self.statuses.update(status="@%s %s" % (question['user']['screen_name'], l),
-                                     in_reply_to_status_id=question['id_str'])
+                kw = {"status": '@%s %s' % (username, unicode(l))}
+                if hasattr(question, 'user'):
+                    kw['in_reply_to_status_id'] = question['id_str']
+
+                self.statuses.update(**kw)

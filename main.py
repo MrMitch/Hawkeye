@@ -5,6 +5,7 @@ from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, APP_NAME
 from commands import Executor
 from commands.repository import registered_commands
 from json import load
+from utils import TwitterClient
 import logging
 import modules.twitter_api as twitter
 
@@ -55,8 +56,9 @@ def main():
     auth = twitter.OAuth(app_config['oauth_token'], app_config['oauth_token_secret'], CONSUMER_KEY, CONSUMER_SECRET)
     stream = twitter.TwitterStream(api_version=1.1, domain='userstream.twitter.com', auth=auth).user()
 
-    Executor.client = twitter.Twitter(auth=auth)
-    Executor.client_settings = Executor.client.account.settings()
+    client = TwitterClient(auth=auth)
+    Executor.client_settings = client.account.settings()
+    Executor.set_client(client)
 
     try:
         # tweet processing, main loop

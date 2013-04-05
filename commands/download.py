@@ -1,6 +1,7 @@
 from commands import Command
 from datetime import datetime
 from downloaders.http import RealDebridFileDownloader, HTTPFileDownloader
+import utils
 
 
 class HTTPDownload(Command):
@@ -11,7 +12,7 @@ class HTTPDownload(Command):
         self.downloader = HTTPFileDownloader()
         self.message = 'ownloading links sent on %s'
 
-    def __notify(self, tweet, client, start=True):
+    def __notify(self, tweet, start=True):
         # datetime.strptime doesn't support %z, hence the +0000 in the string
         date = datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
         if start:
@@ -20,14 +21,13 @@ class HTTPDownload(Command):
             t = 'Done d'
 
         t += self.message % date.strftime('%Y/%m/%d %H:%M:%S')
+        return t, utils.DIRECT_MESSAGE
 
-        client.direct_messages.new(user=tweet['sender_screen_name'], text=t)
+    def pre_hook(self, tweet):
+        return self.__notify(tweet)
 
-    def pre_hook(self, tweet, client):
-        self.__notify(tweet, client)
-
-    def post_hook(self, result, tweet, client):
-        self.__notify(tweet, client, False)
+    def post_hook(self, result, tweet):
+        return self.__notify(tweet, False)
 
     def execute(self, tweet):
         success = []

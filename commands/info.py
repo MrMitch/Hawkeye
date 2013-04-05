@@ -2,6 +2,7 @@
 from datetime import timedelta
 from commands import Command, Executor
 import logging
+import utils
 
 levels = {
     'critical': logging.CRITICAL, 'debug': logging.DEBUG, 'error': logging.ERROR,
@@ -92,17 +93,8 @@ class Stats(Command):
         # print json.dumps(stats, indent=4, separators=(', ', ': '))
         return stats
 
-    def post_hook(self, stats, tweet, client):
-
-        try:
-            user = tweet['user']['screen_name']
-        except KeyError:
-            user = tweet['sender']['screen_name']
-
-        client.direct_messages.new(
-            user=user,
-            text='\n'.join(['='.join((name, str(value))) for name, value in stats.iteritems()])
-        )
+    def post_hook(self, stats, tweet):
+        return '\n'.join(['='.join((name, str(value))) for name, value in stats.iteritems()]), utils.DIRECT_MESSAGE
 
 
 class List(Command):
@@ -112,10 +104,5 @@ class List(Command):
             return Executor.allowed
         return []
 
-    def post_hook(self, result, tweet, client):
-        try:
-            user = tweet['user']['screen_name']
-        except KeyError:
-            user = tweet['sender']['screen_name']
-
-        client.direct_messages.new(user=user, text=', '.join(result))
+    def post_hook(self, result, tweet):
+        return ', '.join(result),

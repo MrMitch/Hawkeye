@@ -42,7 +42,13 @@ class Command(object):
     def __init__(self, options):
         self.options = options
 
+    def pre_hook(self, tweet):
+        pass
+
     def execute(self, tweet):
+        pass
+
+    def post_hook(self, result, tweet):
         pass
 
 
@@ -91,9 +97,10 @@ class Executor(object):
 
     allowed = None
     disallowed = None
-    client = None
     client_settings = None
     commands = Factory()
+
+    __client = None
     __error_message = '%s during %s command: %s.\nTweet to process was: %s'
 
     def __init__(self):
@@ -106,26 +113,29 @@ class Executor(object):
         result = None
 
         try:
+            # PRE HOOK
             try:
-                self.command.pre_hook(tweet, Executor.client)
-            except AttributeError:
-                pass
+                pre_response = self.command.pre_hook(tweet)
             except BaseException as e:
                 raise CommandPreHookError(e)
 
+            if pre_response is not None:
+                Executor.__client.respond(tweet, pre_response)
+
+            # MAIN EXECUTION
             try:
                 result = self.command.execute(tweet)
-            except AttributeError:
-                pass
             except BaseException as e:
                 raise CommandExecutionError(e)
 
+            # POST HOOK
             try:
-                self.command.post_hook(result, tweet, Executor.client)
-            except AttributeError:
-                pass
+                post_response = self.command.post_hook(result, tweet)
             except BaseException as e:
                 raise CommandPostHookError(e)
+
+            if post_response is not None:
+                Executor.__client.respond(tweet, post_response)
 
         except CommandError as e:
             logging.error(Executor.__error_message % (e.__class__.__name__, self.command.__class__.__name__,
@@ -134,3 +144,7 @@ class Executor(object):
     def process(self, tweet):
         thread = threading.Thread(target=self.__run_command_life_cycle, args=(tweet,))
         thread.start()
+
+    @classmethod
+    def set_client(cls, client):
+        cls.__client = client

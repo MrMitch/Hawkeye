@@ -43,13 +43,10 @@ class Stats(Command):
         try:
             with open("/proc/meminfo", 'r') as m:
                 lines = [l.split()[:2] for l in m.readlines()]
-            infos = ['%s %.3f Go' % (info[0], float(info[1]) / 1048576) for info in lines
-                     if info[0] in ['MemTotal:', 'MemFree:', 'SwapTotal:', 'SwapFree:']]
 
             for info in lines:
                 if info[0] in ['MemTotal:', 'MemFree:', 'SwapTotal:', 'SwapFree:']:
                     stats.append((info[0].replace(':', ''), '%.3f Go' % (float(info[1]) / 1048576)))
-            # stats['RAM'] = ', '.join(infos)
         except IOError:
             pass
 
@@ -82,7 +79,6 @@ class Stats(Command):
                         for i in interfaces:
                             stats.append((i[0].replace(':', ''),
                                           "Down: %.3f Go, Up: %.3f Go" % (i[1] / 1073741824, i[2] / 1073741824)))
-
                     except IOError:
                         pass
 

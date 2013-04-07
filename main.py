@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from config import CONF, CONSUMER_KEY, CONSUMER_SECRET, APP_NAME
+from config import BASE, CONF, CONSUMER_KEY, CONSUMER_SECRET, APP_NAME
 from commands import Executor
 from commands.repository import registered_commands
 from json import load
 from utils import TwitterClient
+from os import path
 import logging
 import modules.twitter_api as twitter
 
@@ -13,7 +14,7 @@ import modules.twitter_api as twitter
 def main():
 
     # configure error logging
-    logging.basicConfig(filename="./hawkeye.log", level=logging.INFO,
+    logging.basicConfig(filename=path.join(BASE, 'hawkeye.log'), level=logging.INFO,
                         format='%(asctime)s [%(levelname)s]: %(message)s')
 
     logging.info("%s' is starting" % APP_NAME)

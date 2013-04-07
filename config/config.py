@@ -5,7 +5,7 @@ from modules.rdcli import ask_credentials
 
 
 BASE = path.join(path.abspath(path.expanduser('~')), '.config', 'hawkeye')
-BASE = path.join(path.abspath(path.expanduser('./')))
+BASE = '/etc/hawkeye'
 CONF = path.join(BASE, 'hawkeye.conf.json')
 
 

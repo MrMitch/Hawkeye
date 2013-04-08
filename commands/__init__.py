@@ -51,6 +51,15 @@ class Command(object):
     def post_hook(self, result, tweet):
         pass
 
+    @classmethod
+    def configurable_options(cls):
+        """
+        Return a list of the configurable options for this command.
+        Each item is a tuple : (option_name, option description, value_converter)
+        :return: list
+        """
+        return []
+
 
 class CommandError(BaseException):
     """

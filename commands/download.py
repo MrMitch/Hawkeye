@@ -1,7 +1,10 @@
 from commands import Command
 from datetime import datetime
 from downloaders.http import RealDebridFileDownloader, HTTPFileDownloader
+from os import path
 import twitter_helpers
+
+fullpath = lambda p: path.abspath(path.expanduser(p))
 
 
 class HTTPDownload(Command):
@@ -36,6 +39,15 @@ class HTTPDownload(Command):
 
         return success
 
+    @classmethod
+    def configurable_options(cls):
+        return [
+            ('output_dir', 'Folder where the files will be downloaded', fullpath)
+        ]
+
+
+from hashlib import md5
+
 
 class RealDebridDownload(HTTPDownload):
 
@@ -43,3 +55,15 @@ class RealDebridDownload(HTTPDownload):
         super(RealDebridDownload, self).__init__(options)
         self.downloader = RealDebridFileDownloader(options)
         self.message += ', using Real-Debrid'
+
+    @classmethod
+    def configurable_options(cls):
+        super_options = super(RealDebridDownload, cls).configurable_options()
+
+        super_options.extend([
+            ("cookie_file", "cookie_file", fullpath),
+            ("username", "username", fullpath),
+            ("password", 'password', lambda s: md5(s).hexdigest())
+        ])
+
+        return super_options

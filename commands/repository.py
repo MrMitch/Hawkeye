@@ -1,4 +1,3 @@
-from commands import Error
 from commands.download import HTTPDownload, RealDebridDownload
 from commands.info import Log, Stats, List
 
@@ -9,5 +8,4 @@ registered_commands = [
     ['commands', List],
     ['stats', Stats],
     ['log', Log]
-    #, ['error', Error]
 ]

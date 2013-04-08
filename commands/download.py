@@ -1,7 +1,7 @@
 from commands import Command
 from datetime import datetime
 from downloaders.http import RealDebridFileDownloader, HTTPFileDownloader
-import utils
+import twitter_helpers
 
 
 class HTTPDownload(Command):
@@ -21,7 +21,7 @@ class HTTPDownload(Command):
             t = 'Done d'
 
         t += self.message % date.strftime('%Y/%m/%d %H:%M:%S')
-        return t, utils.DIRECT_MESSAGE
+        return t, twitter_helpers.DIRECT_MESSAGE
 
     def pre_hook(self, tweet):
         return self.__notify(tweet)

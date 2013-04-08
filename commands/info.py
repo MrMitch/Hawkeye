@@ -2,7 +2,7 @@
 from datetime import timedelta
 from commands import Command, Executor
 import logging
-import utils
+import twitter_helpers
 
 levels = {
     'critical': logging.CRITICAL, 'debug': logging.DEBUG, 'error': logging.ERROR,
@@ -96,7 +96,7 @@ class Stats(Command):
         return stats
 
     def post_hook(self, stats, tweet):
-        return '\n'.join([': '.join((s[0], str(s[1]))) for s in stats]), utils.DIRECT_MESSAGE
+        return '\n'.join([': '.join((s[0], str(s[1]))) for s in stats]), twitter_helpers.DIRECT_MESSAGE
 
 
 class List(Command):

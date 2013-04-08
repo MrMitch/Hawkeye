@@ -5,7 +5,7 @@ from config import BASE, CONF, CONSUMER_KEY, CONSUMER_SECRET, APP_NAME
 from commands import Executor
 from commands.repository import registered_commands
 from json import load
-from utils import TwitterClient
+from twitter_helpers import TwitterClient
 from os import path
 import logging
 import modules.twitter_api as twitter

@@ -1,3 +1,3 @@
 #Hawkeye
 
-Semi-automated download server communicating via Twitter.
+Communicate with distant computers, via Twitter.

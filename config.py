@@ -168,15 +168,21 @@ def write_configuration_file():
 
             if command_name != 'hawkeye':
                 try:
-                    for option in commands[command_name].configurable_options():
-                        value = raw_input('%s > %s (%s): ' % (command_name, option[0], option[1]))
+                    configurable = commands[command_name].configurable_options()
 
-                        try:
-                            converter = option[2]
-                        except IndexError:
-                            converter = str
+                    if len(configurable) == 0:
+                        print 'No option to configure'
+                        continue
+                    else:
+                        for option in configurable:
+                            value = raw_input('%s > %s (%s): ' % (command_name, option[0], option[1]))
 
-                        config[option[0]] = converter(value)
+                            try:
+                                converter = option[2]
+                            except IndexError:
+                                converter = str
+
+                            config[option[0]] = converter(value)
                 except KeyError:
                     print __error_frame('Unknown command %s' % command_name)
                     continue

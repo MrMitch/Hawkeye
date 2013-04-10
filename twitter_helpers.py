@@ -29,7 +29,7 @@ class TwitterClient(t.Twitter):
                 try:
                     self.direct_messages.new(user=username, text=l)
                 except t.TwitterHTTPError as e:
-                    logging.error('Error sending response tweet: %s' % e)
+                    logging.error('Error sending response DM: %s' % e)
         else:
             w = TextWrapper(width=140 - (len(username) + 2), break_long_words=False, replace_whitespace=False)
             for l in w.wrap(response[0]):

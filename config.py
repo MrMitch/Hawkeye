@@ -134,6 +134,8 @@ def write_configuration_file():
     for command in registered_commands:
         commands[command[0]] = command[1]
 
+    commands['hawkeye (required)'] = None
+
     try:
         with open(CONF, 'r') as config_file:
             options = json.load(config_file)
@@ -147,7 +149,7 @@ def write_configuration_file():
             'hawkeye': __build_hawkeye_config(commands.keys())
         }
 
-    print '\nAvailable commands: \nhawkeye'
+    print '\nAvailable commands:'
     print "\n".join(commands.keys())
 
     while True:
@@ -160,7 +162,7 @@ def write_configuration_file():
                 break
 
             if command_name == '?':
-                print '\nAvailable commands: \nhawkeye'
+                print '\nAvailable commands:'
                 print "\n".join(commands.keys())
                 continue
 

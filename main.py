@@ -79,15 +79,8 @@ def main():
                     tweet = t
                     tweet['sender_screen_name'] = tweet['user']['screen_name']
                     # we want to make sure the tweet is directly addressed to Hawkeye
-                    try:
-                        mention_name = tweet['entities']['user_mentions'][0]["screen_name"]
-                        mention_position = tweet['entities']['user_mentions'][0]['indices'][0]
 
-                        # skip the tweet if it's not directly addressed to Hawkeye
-                        if mention_position != 0 or mention_name != Executor.client_settings['screen_name']:
-                            continue
-                    except IndexError:
-                        # the tweet doesn't even mention anyone
+                    if not tweet['text'].startswith('@%s ' % Executor.client_settings['screen_name']):
                         continue
 
                 # only process tweets/DMs from whitelisted users

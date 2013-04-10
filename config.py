@@ -196,9 +196,11 @@ def write_configuration_file():
             break
 
     if save:
-        s = json.dumps(options, indent=4, separators=(', ', ': '))
-        #with open(CONF, 'wb') as output:
-        #    dump(config, output, options, indent=4, separators=(', ', ': '))
-        print "\n %s" % s
+        try:
+            with open(CONF, 'wb') as output:
+                dump(options, output, options, indent=4, separators=(', ', ': '))
+            print 'Configuration saved to %s' % CONF
+        except IOError as e:
+            print 'Unable to save configuration to %s: %s' % (CONF, e)
     else:
         print '\nNothing was saved'

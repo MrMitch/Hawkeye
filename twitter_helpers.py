@@ -30,7 +30,7 @@ class TwitterClient(modules.twitter_api.Twitter):
             w = TextWrapper(width=140 - (len(username) + 2), break_long_words=False, replace_whitespace=False)
             for l in w.wrap(response[0]):
                 kw = {"status": '@%s %s' % (username, unicode(l))}
-                if hasattr(question, 'user'):
+                if question.get('user', None) is not None:
                     kw['in_reply_to_status_id'] = question['id_str']
 
                 self.statuses.update(**kw)

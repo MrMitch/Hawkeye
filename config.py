@@ -13,6 +13,11 @@ CONSUMER_KEY = 'OzICYfiYXDZlo41cMBr1yQ'
 CONSUMER_SECRET = '7mN5kptD3Qc14Jb5KWJnTMcICG6FXf5cAAJdX7MA'
 
 
+def __error_frame(msg):
+    border = '*' * len(msg)
+    return '\n%s' % '\n'.join((border, msg, border, ''))
+
+
 def __parse_oauth_tokens(raw):
     for r in raw.split('&'):
         k, v = r.split('=')
@@ -30,15 +35,19 @@ def __oauth_dance():
     oauth_token, oauth_token_secret = __parse_oauth_tokens(api.oauth.request_token())
     oauth_url = 'http://api.twitter.com/oauth/authorize?oauth_token=%s' % oauth_token
 
-    print("Please ALLOW %s to access your Twitter account and enter the PIN given here:\n%s ." % (APP_NAME, oauth_url))
+    print('Please ALLOW %s to access your Twitter account and enter the PIN given here:\n%s' % (APP_NAME, oauth_url))
 
     pin = raw_input("Please enter the PIN: ").strip()
 
     api = twitter.Twitter(auth=twitter.OAuth(oauth_token, oauth_token_secret, CONSUMER_KEY, CONSUMER_SECRET), format='',
                           api_version=None)
 
-    raw_tokens = api.oauth.access_token(oauth_verifier=pin)
-    return __parse_oauth_tokens(raw_tokens)
+    try:
+        raw_tokens = api.oauth.access_token(oauth_verifier=pin)
+        return __parse_oauth_tokens(raw_tokens)
+    except twitter.TwitterHTTPError as e:
+        print __error_frame(e.response_data)
+        return None, None
 
 
 def __build_hawkeye_config(commands):
@@ -52,8 +61,8 @@ def __build_hawkeye_config(commands):
 
     # command selection strategy
     print 'What strategy should %s apply to select the allowed commands: ' % APP_NAME
-    print '\t- exclusive (-): every available command is allowed *except the ones specified*'
-    print '\t- inclusive (+): the *only allowed commands* are the one specified'
+    print '  - exclusive (-): every available command is allowed *except the ones specified*'
+    print '  - inclusive (+): the *only allowed commands* are the one specified'
     strat = raw_input('Command selection strategy ["+" or "-" (inclusive or exclusive)]: ').strip()
 
     # sugar!
@@ -69,7 +78,7 @@ def __build_hawkeye_config(commands):
 
     config['commands'] = []
     while True:
-        c = raw_input('Command name (empty value to end the list)').strip()
+        c = raw_input('Command name (empty value to end the list): ').strip()
 
         if c == '':
             break
@@ -77,24 +86,31 @@ def __build_hawkeye_config(commands):
         if c in commands:
             config['commands'].append(c)
 
-        print '\rConcerned: %s' % ', '.join(config['commands'])
+        print '\rConcerned commands: %s' % ', '.join(config['commands'])
 
-    # default command
-    c = raw_input('What should be the default command (i.e the command to execute when a tweet or a DM is sent '
-                  'to %s with no hashtag)' % APP_NAME).strip()
+    if len(config['commands']) > 0:
+        # default command
+        print 'What should be the default command (i.e the command to execute when a tweet or a DM is sent ' \
+              'to %s with no hashtag): ' % APP_NAME
+        while True:
+            c = raw_input('Command name: ').strip()
 
-    if c in commands:
-        config['default_command'] = c
-    else:
-        print 'Unknown command, using "log" as default command instead'
-        config['default_command'] = 'log'
+            if c in config['commands']:
+                config['default_command'] = c
+                break
+            else:
+                print __error_frame('Unknown or disabled command')
 
     # users whitelist
     config['whitelist'] = []
     print 'From which user(s) should Hawkeye accept commands ?'
 
     while True:
-        c = raw_input('User name (empty value to end the list)').strip()
+        c = raw_input('User name (empty value to end the list): ').strip()
+
+        if c == '':
+            break
+
         config['whitelist'].append(c)
 
         print '\rUsers: %s' % ', '.join(config['whitelist'])
@@ -160,7 +176,7 @@ def write_configuration_file():
 
                         config[option[0]] = converter(value)
                 except KeyError:
-                    print 'Unknown command %s' % command_name
+                    print __error_frame('Unknown command %s' % command_name)
                     continue
             else:
                 config = __build_hawkeye_config(commands.keys())

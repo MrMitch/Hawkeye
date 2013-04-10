@@ -13,7 +13,7 @@ CONSUMER_KEY = 'OzICYfiYXDZlo41cMBr1yQ'
 CONSUMER_SECRET = '7mN5kptD3Qc14Jb5KWJnTMcICG6FXf5cAAJdX7MA'
 
 
-def _parse_oauth_tokens(raw):
+def __parse_oauth_tokens(raw):
     for r in raw.split('&'):
         k, v = r.split('=')
         if k == 'oauth_token':
@@ -23,12 +23,12 @@ def _parse_oauth_tokens(raw):
     return oauth_token, oauth_token_secret
 
 
-def _oauth_dance():
+def __oauth_dance():
 
     api = twitter.Twitter(auth=twitter.OAuth('', '', CONSUMER_KEY, CONSUMER_SECRET), format='', api_version=None)
 
-    oauth_token, oauth_token_secret = _parse_oauth_tokens(api.oauth.request_token())
-    oauth_url = ('http://api.twitter.com/oauth/authorize?oauth_token=' + oauth_token)
+    oauth_token, oauth_token_secret = __parse_oauth_tokens(api.oauth.request_token())
+    oauth_url = 'http://api.twitter.com/oauth/authorize?oauth_token=%s' % oauth_token
 
     print("Please ALLOW %s to access your Twitter account and enter the PIN given here:\n%s ." % (APP_NAME, oauth_url))
 
@@ -38,28 +38,71 @@ def _oauth_dance():
                           api_version=None)
 
     raw_tokens = api.oauth.access_token(oauth_verifier=pin)
-    return _parse_oauth_tokens(raw_tokens)
+    return __parse_oauth_tokens(raw_tokens)
+
+
+def __build_hawkeye_config(commands):
+    config = {}
+
+    # Twitter access tokens
+    print 'Twitter access configuration'
+    oauth_token, oauth_token_secret = __oauth_dance()
+    config['oauth_token'] = oauth_token
+    config['oauth_token_secret'] = oauth_token_secret
+
+    # command selection strategy
+    print 'What strategy should %s apply to select the allowed commands: ' % APP_NAME
+    print '\t- exclusive (-): every available command is allowed *except the ones specified*'
+    print '\t- inclusive (+): the *only allowed commands* are the one specified'
+    strat = raw_input('Command selection strategy ["+" or "-" (inclusive or exclusive)]: ').strip()
+
+    # sugar!
+    if strat not in ('-', 'ex', 'exclusive'):
+        elected = 'inclusive'
+        config['command_registering_strategy'] = '+'
+    else:
+        elected = 'exclusive'
+
+    # commands concerned by the strategy
+    print 'Available commands: %s ' % ', '.join(commands)
+    print 'Which commands should be concerned by the %s strategy ?' % elected
+
+    config['commands'] = []
+    while True:
+        c = raw_input('Command name (empty value to end the list)').strip()
+
+        if c == '':
+            break
+
+        if c in commands:
+            config['commands'].append(c)
+
+        print '\rConcerned: %s' % ', '.join(config['commands'])
+
+    # default command
+    c = raw_input('What should be the default command (i.e the command to execute when a tweet or a DM is sent '
+                  'to %s with no hashtag)' % APP_NAME).strip()
+
+    if c in commands:
+        config['default_command'] = c
+    else:
+        print 'Unknown command, using "log" as default command instead'
+        config['default_command'] = 'log'
+
+    # users whitelist
+    config['whitelist'] = []
+    print 'From which user(s) should Hawkeye accept commands ?'
+
+    while True:
+        c = raw_input('User name (empty value to end the list)').strip()
+        config['whitelist'].append(c)
+
+        print '\rUsers: %s' % ', '.join(config['whitelist'])
+
+    return config
 
 
 def write_configuration_file():
-    # oauth_token, oauth_token_secret = _oauth_dance()
-
-    conf = {
-        'hawkeye': {
-            "oauth_token": "1163112044-QV9KrjAzj6KKBz5xj9TpVlPhQLvc9TAzaYJC6hg",
-            "oauth_token_secret": "O0BH50I6q7oGRMOPNUqxpI2tM11TyGKqrtHzd2rWIs",
-            "default_command": "log",
-
-            "whitelist": [
-                "__RobinBerry"
-            ],
-
-            "command_registering_strategy": "-",
-            "commands": [
-                "rd"
-            ]
-        }
-    }
     print r''' _    _                _
 | |  | |              | |
 | |__| | __ ___      _| | _____ _   _  ___
@@ -69,35 +112,43 @@ def write_configuration_file():
                                  __/ |
                                 |___/
     '''
-
-    try:
-        with open(CONF, 'r') as config_file:
-            options = json.load(config_file)
-
-        print 'Existing configuration found for modules: %s' % ', '.join(options.keys())
-        print '/!\\ Choosing to re-configure one of these commands will erase any existing ' \
-              'configuration option on save.'
-    except IOError:
-        options = {}
-
     save = True
     commands = {}
 
     for command in registered_commands:
         commands[command[0]] = command[1]
 
+    try:
+        with open(CONF, 'r') as config_file:
+            options = json.load(config_file)
+
+        print 'Existing configuration found for commands: %s' % ', '.join(options.keys())
+        print '/!\\ Choosing to re-configure one of these commands will erase any of its ' \
+              'existing configuration options on save.'
+    except IOError:
+        print 'No configuration file found'
+        options = {
+            'hawkeye': __build_hawkeye_config(commands.keys())
+        }
+
+    print '\nAvailable commands: \nhawkeye'
+    print "\n".join(commands.keys())
+
     while True:
         try:
-            print '\nAvailable commands: '
-            print "\n".join(commands.keys())
-
-            command_name = raw_input('\nCommand to configure (empty value to save, Ctrl^C to cancel): ').strip()
+            command_name = raw_input('\nCommand to configure '
+                                     '(? for command list, empty value to save, Ctrl^C to cancel and exit): ').strip()
             config = {}
 
             if command_name == '':
                 break
 
-            if command_name is not 'hawkeye':
+            if command_name == '?':
+                print '\nAvailable commands: \nhawkeye'
+                print "\n".join(commands.keys())
+                continue
+
+            if command_name != 'hawkeye':
                 try:
                     for option in commands[command_name].configurable_options():
                         value = raw_input('%s > %s (%s): ' % (command_name, option[0], option[1]))
@@ -108,15 +159,15 @@ def write_configuration_file():
                             converter = str
 
                         config[option[0]] = converter(value)
-
-                    options[command_name] = config
                 except KeyError:
                     print 'Unknown command %s' % command_name
                     continue
             else:
-                pass
+                config = __build_hawkeye_config(commands.keys())
+
+            options[command_name] = config
+            print '\n---- %s configured ----' % command_name
         except KeyboardInterrupt:
-            print '\nAborted, nothing was saved.'
             save = False
             break
 
@@ -125,3 +176,5 @@ def write_configuration_file():
         #with open(CONF, 'wb') as output:
         #    dump(config, output, options, indent=4, separators=(', ', ': '))
         print "\n %s" % s
+    else:
+        print '\nNothing was saved'

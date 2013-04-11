@@ -1,0 +1,10 @@
+{
+    "hawkeye": {
+        "commands": [], 
+        "oauth_token_secret": "",
+        "whitelist": [], 
+        "default_command": "log", 
+        "oauth_token": "",
+        "command_registering_strategy": "+"
+    }
+}

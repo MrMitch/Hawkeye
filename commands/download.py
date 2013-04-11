@@ -46,9 +46,6 @@ class HTTPDownload(Command):
         ]
 
 
-from hashlib import md5
-
-
 class RealDebridDownload(HTTPDownload):
 
     def __init__(self, options):
@@ -58,12 +55,15 @@ class RealDebridDownload(HTTPDownload):
 
     @classmethod
     def configurable_options(cls):
+        from config import APP_NAME
+        from hashlib import md5
+
         super_options = super(RealDebridDownload, cls).configurable_options()
 
         super_options.extend([
-            ("cookie_file", "cookie_file", fullpath),
-            ("username", "username", fullpath),
-            ("password", 'password', lambda s: md5(s).hexdigest())
+            ('cookie_file', 'The file were %s will store the RealDebrid cookie' % APP_NAME, fullpath),
+            ('username', 'The username to use to login on RealDebrid', fullpath),
+            ('password', 'The password to use to login on RealDebrid', lambda s: md5(s).hexdigest())
         ])
 
         return super_options

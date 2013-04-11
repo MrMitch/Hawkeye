@@ -62,7 +62,7 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	start-stop-daemon -v -u hawkeye -g hawkeye --stop --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
+	start-stop-daemon -v --stop --retry=TERM/30/KILL/5 --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS --name $NAME
 	RETVAL="$?"
 	[ "$RETVAL" = 2 ] && return 2
 	# Wait for children to finish too if this is a daemon that forks
@@ -71,8 +71,8 @@ do_stop()
 	# that waits for the process to drop all resources that could be
 	# needed by services started subsequently.  A last resort is to
 	# sleep for some time.
-	start-stop-daemon -v -u hawkeye -g hawkeye --stop --oknodo --retry=0/30/KILL/5 --exec $DAEMON -- $DAEMON_ARGS
-	[ "$?" = 2 ] && return 2
+	# start-stop-daemon -v --stop --oknodo --retry=0/30/KILL/5 --exec $DAEMON -- $DAEMON_ARGS
+	# [ "$?" = 2 ] && return 2
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
 	return "$RETVAL"

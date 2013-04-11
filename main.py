@@ -45,7 +45,7 @@ def main():
         # only keep the listed commands
         commands = [registered for registered in registered_commands if registered[0] in app_config['commands']]
 
-    Executor.allowed = map(lambda c: c[0], commands)
+    Executor.allowed = [command[0] for command in commands]
     Executor.disallowed = [command[0] for command in registered_commands if command not in commands]
 
     # register all commands

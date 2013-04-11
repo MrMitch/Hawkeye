@@ -1,6 +1,7 @@
 .idea
 *.pyc
 *.conf
+*.conf.json
 *.db
 *.cookie
 test.py

@@ -4,7 +4,6 @@
 *.conf.json
 *.db
 *.cookie
-test.py
-*test.py
+test
 *.log
 twitter-dump.json

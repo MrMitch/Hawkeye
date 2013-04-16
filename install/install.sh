@@ -8,11 +8,6 @@ if [[ `whoami` == 'root' ]]
     INSTALLATION_DIR=/etc/hawkeye
     HAWKEYE_CONFIG=/usr/local/bin/hawkeye-config
 
-    echo "Creating hawkeye user and group..."
-    useradd -r -s /bin/false hawkeye
-    echo "...done"
-    echo ""
-
     echo "Fetching hawkeye's sources from GitHub..."
     git clone https://github.com/MrMitch/Hawkeye.git $TMP_DIR
     CLONE="$?"
@@ -32,6 +27,11 @@ if [[ `whoami` == 'root' ]]
     cd $TMP_DIR
     git submodule init
     git submodule update
+    echo "...done"
+    echo ""
+
+    echo "Creating hawkeye user and group..."
+    useradd -r -s /bin/false hawkeye
     echo "...done"
     echo ""
 

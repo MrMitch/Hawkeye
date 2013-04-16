@@ -4,12 +4,12 @@ Communicate with distant computers, via Twitter.
 
 ## Installation
 
-**TL;DR**: `wget -qO /tmp/h.sh http://tinyurl.com/hwky-inst && sudo bash /tmp/h.sh` 
+**TL;DR**: `wget -qO /tmp/h.sh http://bit.ly/get-hawkeye && sudo bash /tmp/h.sh` 
 
 
 To install Hawkeye, you can download the [install.sh](install/install.sh) script, make it executable and execute it...    
 ... or you can simply run:    
-`wget -qO /tmp/h.sh http://tinyurl.com/hwky-inst && sudo bash /tmp/h.sh`    
+`wget -qO /tmp/h.sh http://bit.ly/get-hawkeye && sudo bash /tmp/h.sh`    
 
 In both cases, you should get an output that looks like the following (if everything is OK): 
  

@@ -51,7 +51,7 @@ if [[ `whoami` == 'root' ]]
     if [[ $BOOT == "y" || $BOOT == "yes" ]]
         then
         echo "Configuring hawkeye to start on boot..."
-        update-rd.d hawkeye defaults
+        update-rc.d hawkeye defaults
         echo "...done"
         echo ""
     fi

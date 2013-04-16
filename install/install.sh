@@ -20,7 +20,9 @@ if [[ `whoami` == 'root' ]]
     if [[ $CLONE != 0 ]]
         then
         echo '...fail!'
-        exit
+        echo "The installation script could not fetch Hawkeye's sources."
+        echo "Please check your Internet connection and make sure that you have installed git."
+        exit 1
     fi
 
     echo "...done"

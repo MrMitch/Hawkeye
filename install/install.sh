@@ -63,8 +63,9 @@ if [[ `whoami` == 'root' ]]
     echo "...done"
     echo ""
 
-    echo "Hawkeye is now installed, BUT NOT CONFIGURED, You can configure hawkeye by running: hawkeye-config."
-    echo -n "Should this script invoke it for you now ? [yes/no]"
+    echo "Hawkeye is now installed, BUT NOT CONFIGURED."
+    echo "You can configure hawkeye by running: hawkeye-config."
+    echo -n "Should this script invoke it for you now ? [yes/no] "
     read CONFIG
 
     if [[ $CONFIG == "y" || $CONFIG == "yes" ]]

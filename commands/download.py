@@ -1,3 +1,7 @@
+import logging
+from urllib import urlretrieve
+from urllib2 import urlopen
+from urlparse import urlparse
 from commands import Command
 from datetime import datetime
 from downloaders.http import RealDebridFileDownloader, HTTPFileDownloader
@@ -8,6 +12,11 @@ fullpath = lambda p: path.abspath(path.expanduser(p))
 
 
 class HTTPDownload(Command):
+
+    __services = {
+        'pastebin': lambda url: url.replace('.com/', '.com/raw.php?i='),
+        'pastie': lambda url: url.replace('.org/', '.org/pastes/') + '/download'
+    }
 
     def __init__(self, options):
         super(HTTPDownload, self).__init__(options)
@@ -35,9 +44,27 @@ class HTTPDownload(Command):
     def execute(self, tweet):
         success = []
         for url in tweet['entities']['urls']:
-            success.append(self.downloader.download(url['expanded_url'], self.output_dir))
+            l = url['expanded_url']
+            service = urlparse(l).hostname.split('.')[-2]
+
+            if service in self.__services.keys():
+                target = self.__services[service](l)
+                filename, headers = urlretrieve(target)
+
+                try:
+                    with open(filename, 'r') as links:
+                        for link in links.readlines():
+                            success.append(self.downloader.download(link.strip(), self.output_dir))
+                except IOError:
+                    logging.warning('Unable while trying to read %s' % filename)
+            else:
+                success.append(self.downloader.download(url['expanded_url'], self.output_dir))
+
+            # success.append(self.downloader.download(url['expanded_url'], self.output_dir))
 
         return success
+
+
 
     @classmethod
     def configurable_options(cls):

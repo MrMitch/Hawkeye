@@ -71,6 +71,7 @@ def __build_hawkeye_config(commands):
         config['command_registering_strategy'] = '+'
     else:
         elected = 'exclusive'
+        config['command_registering_strategy'] = '-'
 
     # commands concerned by the strategy
     print 'Available commands: %s ' % ', '.join(commands)
@@ -88,25 +89,22 @@ def __build_hawkeye_config(commands):
 
         print '\rConcerned commands: %s' % ', '.join(config['commands'])
 
-    if len(config['commands']) > 0:
-        # default command
-        print 'What should be the default command (i.e the command to execute when a tweet or a DM is sent ' \
-              'to %s with no hashtag): ' % APP_NAME
-        while True:
-            c = raw_input('Command name: ').strip()
+    # default command
+    print 'What should be the default command (i.e the command to execute when a tweet or a DM is sent ' \
+          'to %s with no hashtag): ' % APP_NAME
+    while True:
+        c = raw_input('Command name: ').strip()
 
-            if c in config['commands']:
-                config['default_command'] = c
-                break
-            else:
-                print __error_frame('Unknown or disabled command')
+        if c != '':
+            config['default_command'] = c
+            break
 
     # users whitelist
     config['whitelist'] = []
     print 'From which user(s) should Hawkeye accept commands ?'
 
     while True:
-        c = raw_input('User name (empty value to end the list): ').strip()
+        c = raw_input('User name WITHOUT THE "@" (empty value to end the list): ').strip()
 
         if c == '':
             break

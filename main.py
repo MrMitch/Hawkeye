@@ -17,7 +17,7 @@ def main():
     logging.basicConfig(filename=path.join(BASE, 'hawkeye.log'), level=logging.INFO,
                         format='%(asctime)s [%(levelname)s]: %(message)s')
 
-    logging.info("%s' is starting" % APP_NAME)
+    logging.info('%s is starting' % APP_NAME)
 
     # retrieve configuration
     try:
@@ -26,11 +26,11 @@ def main():
             app_config = full_config['hawkeye']
     except KeyError as e:
         logging.critical('Missing configuration section: %s' % str(e))
-        logging.info("%s is exiting" % APP_NAME)
+        logging.info('%s is exiting' % APP_NAME)
         exit(1)
     except IOError as e:
         logging.critical('Error trying to read configuration file: %s' % str(e))
-        logging.info("%s is exiting" % APP_NAME)
+        logging.info('%s is exiting' % APP_NAME)
         exit(1)
 
     try:
@@ -50,7 +50,7 @@ def main():
 
     # register all commands
     for command in commands:
-        logging.info("Registering %s command" % command[0])
+        logging.info('Registering %s command' % command[0])
         Executor.commands.register(command[0], command[1])
 
     # configure twitter clients (stream + classic)
@@ -107,11 +107,11 @@ def main():
                         executor.process(tweet)
                     else:
                         if command in Executor.disallowed:
-                            logging.warning("Denied command attempted: %s " % (tweet['text']))
+                            logging.warning('Denied command attempted: %s ' % (tweet['text']))
 
     except KeyboardInterrupt:
         stream.close()
-        logging.info("KeyboardInterrupt caught, %s is exiting" % APP_NAME)
+        logging.info('KeyboardInterrupt caught, %s is exiting' % APP_NAME)
 
     return
 

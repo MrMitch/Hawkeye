@@ -34,11 +34,11 @@ def main():
         exit(1)
 
     try:
-        optimist = (app_config['command_registering_strategy'] == '-')
+        exclusive = (app_config['command_registering_strategy'] == '-')
     except KeyError:
-        optimist = False
+        exclusive = False
 
-    if optimist:
+    if exclusive:
         # keep only the non-listed commands
         commands = [registered for registered in registered_commands if registered[0] not in app_config['commands']]
     else:

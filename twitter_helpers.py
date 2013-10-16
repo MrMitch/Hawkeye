@@ -19,9 +19,13 @@ class TwitterClient(t.Twitter):
     def respond(self, question, response):
         username = question['sender_screen_name']
 
-        response_type = TWEET
-        if len(response) > 1 and response[1] == DIRECT_MESSAGE:
-            response_type = DIRECT_MESSAGE
+        # if a response type is specified, use this response type
+        if type(response) == tuple:
+            response_type = DIRECT_MESSAGE if response[1] == DIRECT_MESSAGE else TWEET
+        else:
+            # by default, the response type is the same as the question's type
+            # i.e respond to a tweet by a tweet and to a DM by a DM
+            response_type = DIRECT_MESSAGE if 'direct_message' in question else TWEET
 
         if response_type == DIRECT_MESSAGE:
             w = TextWrapper(width=140, break_long_words=False, replace_whitespace=False)

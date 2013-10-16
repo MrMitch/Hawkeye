@@ -6,18 +6,18 @@ class Factory(object):
     """
     http://code.activestate.com/recipes/86900/
     """
-    def register(self, methodName, constructor, *args, **kwargs):
+    def register(self, method_name, constructor, *args, **kwargs):
         """register a constructor"""
         _args = [constructor]
         _args.extend(args)
-        setattr(self, methodName, Functor(*_args, **kwargs))
+        setattr(self, method_name, Functor(*_args, **kwargs))
 
     def get(self, key, *args, **kwargs):
         return getattr(self, key)(*args, **kwargs)
 
-    def unregister(self, methodName):
+    def unregister(self, method_name):
         """unregister a constructor"""
-        delattr(self, methodName)
+        delattr(self, method_name)
 
 
 class Functor(object):

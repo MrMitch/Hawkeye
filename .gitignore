@@ -1,9 +1,6 @@
 .idea
 *.pyc
-*.conf
-*.conf.json
-*.db
-*.cookie
+hawkeye.conf.json
 test
 *.log
 twitter-dump.json

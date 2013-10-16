@@ -9,6 +9,7 @@ from twitter_helpers import TwitterClient
 from os import path
 import logging
 import modules.twitter_api as twitter
+import sys
 
 
 def main():
@@ -32,6 +33,43 @@ def main():
         logging.critical('Error trying to read configuration file: %s' % str(e))
         logging.info('%s is exiting' % APP_NAME)
         exit(1)
+
+    if 'plugin_directories' in app_config:
+        logging.info('Importing plugins')
+        try:
+            commands_names = [command[0] for command in registered_commands]
+
+            from importlib import import_module
+
+            for folder, packages in app_config['plugin_directories'].iteritems():
+                sys.path.append(path.abspath(path.expanduser(folder)))
+
+                for package in packages:
+                    try:
+                        module = import_module('%s.repository' % package)
+                        module_commands = module.registered_commands
+                        logging.info('\tLoading commands from %s ' % module.__name__)
+
+                        # we can only import commands for which the command name hasn't already been registered yet
+                        registrable = [command for command in module_commands if command[0] not in commands_names]
+                        non_registrable = [command for command in module_commands if command[0] in commands_names]
+
+                        for not_registered in non_registrable:
+                            logging.error('\t\t%s command won\'t be registered, command name is already used.'
+                                          % not_registered[0])
+
+                        registered_commands.extend(registrable)
+
+                        for registered in registrable:
+                            commands_names.append(registered[0])
+
+                    except ImportError as e:
+                        logging.error('\tImportError ' % str(e))
+
+        except KeyError:
+            pass
+
+        logging.info('Plugins import finished')
 
     try:
         exclusive = (app_config['command_registering_strategy'] == '-')

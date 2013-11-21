@@ -1,6 +1,6 @@
 import json
 from commands.repository import registered_commands
-from json import dump
+from json import dump, dumps
 from os import path
 import modules.twitter_api as twitter
 
@@ -28,7 +28,7 @@ def __parse_oauth_tokens(raw):
     return oauth_token, oauth_token_secret
 
 
-def __oauth_dance():
+def __get_oauth_tokens():
 
     api = twitter.Twitter(auth=twitter.OAuth('', '', CONSUMER_KEY, CONSUMER_SECRET), format='', api_version=None)
 
@@ -54,19 +54,19 @@ def __build_hawkeye_config(commands):
     config = {}
 
     # Twitter access tokens
-    print 'Twitter access configuration'
-    oauth_token, oauth_token_secret = __oauth_dance()
+    print '\nTwitter access configuration'
+    oauth_token, oauth_token_secret = __get_oauth_tokens()
     config['oauth_token'] = oauth_token
     config['oauth_token_secret'] = oauth_token_secret
 
     # command selection strategy
-    print 'What strategy should %s apply to select the allowed commands: ' % APP_NAME
+    print '\nWhat strategy should %s apply to select the allowed commands: ' % APP_NAME
     print '  - exclusive (-): every available command is allowed *except the ones specified*'
     print '  - inclusive (+): the *only allowed commands* are the one specified'
-    strat = raw_input('Command selection strategy ["+" or "-" (inclusive or exclusive)]: ').strip()
+    strategy = raw_input('Command selection strategy ["+" or "-" (inclusive or exclusive)]: ').strip()
 
     # sugar!
-    if strat not in ('-', 'ex', 'exclusive'):
+    if strategy not in ('-', 'ex', 'exclusive'):
         elected = 'inclusive'
         config['command_registering_strategy'] = '+'
     else:
@@ -74,8 +74,8 @@ def __build_hawkeye_config(commands):
         config['command_registering_strategy'] = '-'
 
     # commands concerned by the strategy
+    print '\nWhich commands should be concerned by the %s strategy ?' % elected
     print 'Available commands: %s ' % ', '.join(commands)
-    print 'Which commands should be concerned by the %s strategy ?' % elected
 
     config['commands'] = []
     while True:
@@ -90,7 +90,7 @@ def __build_hawkeye_config(commands):
         print '\rConcerned commands: %s' % ', '.join(config['commands'])
 
     # default command
-    print 'What should be the default command (i.e the command to execute when a tweet or a DM is sent ' \
+    print '\nWhat should be the default command (i.e the command to execute when a tweet or a DM is sent ' \
           'to %s with no hashtag): ' % APP_NAME
     while True:
         c = raw_input('Command name: ').strip()
@@ -101,15 +101,15 @@ def __build_hawkeye_config(commands):
 
     # users whitelist
     config['whitelist'] = []
-    print 'From which user(s) should Hawkeye accept commands ?'
+    print '\nFrom which user(s) should %s accept commands ?' % APP_NAME
 
     while True:
-        c = raw_input('User name WITHOUT THE "@" (empty value to end the list): ').strip()
+        name = raw_input('User name (empty value to end the list): ').strip()
 
-        if c == '':
+        if name == '':
             break
 
-        config['whitelist'].append(c)
+        config['whitelist'].append(name.lstrip('@'))
 
         print '\rUsers: %s' % ', '.join(config['whitelist'])
 
@@ -189,7 +189,7 @@ def write_configuration_file():
 
             options[command_name] = config
             print '\n---- %s configured ----' % command_name
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, EOFError):
             save = False
             break
 
@@ -199,6 +199,10 @@ def write_configuration_file():
                 dump(options, output, options, indent=4, separators=(', ', ': '))
             print 'Configuration saved to %s' % CONF
         except IOError as e:
-            print 'Unable to save configuration to %s: %s' % (CONF, e)
+            print 'Unable to write configuration to disk (%s): %s' % (CONF, e)
+            print_to_term = raw_input('Would you like to output the config file\'s content here ? (y/n): ')
+
+            if print_to_term.lower() == 'y' or print_to_term.lower() == 'yes':
+                print dumps(options, indent=4, separators=(', ', ': '))
     else:
         print '\nNothing was saved'

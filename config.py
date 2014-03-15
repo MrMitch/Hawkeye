@@ -33,7 +33,7 @@ def __get_oauth_tokens():
     api = twitter.Twitter(auth=twitter.OAuth('', '', CONSUMER_KEY, CONSUMER_SECRET), format='', api_version=None)
 
     oauth_token, oauth_token_secret = __parse_oauth_tokens(api.oauth.request_token())
-    oauth_url = 'http://api.twitter.com/oauth/authorize?oauth_token=%s' % oauth_token
+    oauth_url = 'https://api.twitter.com/oauth/authorize?oauth_token=%s' % oauth_token
 
     print('Please ALLOW %s to access your Twitter account and enter the PIN given here:\n%s' % (APP_NAME, oauth_url))
 

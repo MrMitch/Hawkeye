@@ -89,16 +89,6 @@ def __build_hawkeye_config(commands):
 
         print '\rConcerned commands: %s' % ', '.join(config['commands'])
 
-    # default command
-    print '\nWhat should be the default command (i.e the command to execute when a tweet or a DM is sent ' \
-          'to %s with no hashtag): ' % APP_NAME
-    while True:
-        c = raw_input('Command name: ').strip()
-
-        if c != '':
-            config['default_command'] = c
-            break
-
     # users whitelist
     config['whitelist'] = []
     print '\nFrom which user(s) should %s accept commands ?' % APP_NAME

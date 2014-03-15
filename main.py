@@ -10,9 +10,26 @@ from os import path
 import logging
 import modules.twitter_api as twitter
 import sys
+import signal
 
 
 def main():
+
+    def signal_handler(signal_num, stack_frame):
+        try:
+            stream.close()
+        except Exception as ex:
+            print "EXCEPTION ON SIGNAL %i " % signal_num
+            print ex
+
+        logging.info('Signal %i caught, %s is exiting' % (signal_num, APP_NAME))
+
+    signal.signal(signal.SIGHUP, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGQUIT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGTSTP, signal_handler)
+    signal.signal(signal.SIGPWR, signal_handler)
 
     # configure error logging
     logging.basicConfig(filename=path.join(BASE, 'hawkeye.log'), level=logging.INFO,
@@ -99,38 +116,34 @@ def main():
     Executor.client_settings = client.account.settings()
     Executor.set_client(client)
 
-    try:
-        # tweet processing, main loop
-        for t in stream:
+    # tweet processing, main loop
+    for t in stream:
 
-            # we only want tweets or DMs
-            if t.get('direct_message') or t.get('text'):
+        # we only want tweets or DMs
+        if t.get('direct_message') or t.get('text'):
 
-                sender = 'user'
+            sender = 'user'
 
-                # direct message
-                if t.get('direct_message'):
-                    tweet = t['direct_message']
-                    sender = 'sender'
-                # tweet
-                else:
-                    tweet = t
-                    tweet['sender_screen_name'] = tweet['user']['screen_name']
-                    # we want to make sure the tweet is directly addressed to Hawkeye
+            # direct message
+            if t.get('direct_message'):
+                tweet = t['direct_message']
+                sender = 'sender'
+            # tweet
+            else:
+                tweet = t
+                tweet['sender_screen_name'] = tweet['user']['screen_name']
+                # we want to make sure the tweet is directly addressed to Hawkeye
 
-                    if not tweet['text'].startswith('@%s ' % Executor.client_settings['screen_name']):
-                        continue
+                if not tweet['text'].startswith('@%s ' % Executor.client_settings['screen_name']):
+                    continue
 
-                # only process tweets/DMs from whitelisted users
-                if tweet[sender]['screen_name'] in app_config['whitelist']:
+            # only process tweets/DMs from whitelisted users
+            if tweet[sender]['screen_name'] in app_config['whitelist']:
 
-                    # the command name is the first hastag, or the default one if no hastags
-                    if len(tweet['entities']['hashtags']) == 0:
-                        command = app_config["default_command"]
-                        tweet['entities']['hashtags'].append({"indices": [0, 0], "text": command})
-                    else:
-                        command = tweet['entities']['hashtags'][0]['text']
-                        # del tweet['entities']['hashtags'][0]
+                # the command name is the first hastag
+                if len(tweet['entities']['hashtags']) > 0:
+                    command = tweet['entities']['hashtags'][0]['text']
+                    # del tweet['entities']['hashtags'][0]
 
                     if command in Executor.allowed:
                         executor = Executor()
@@ -146,10 +159,6 @@ def main():
                     else:
                         if command in Executor.disallowed:
                             logging.warning('Denied command attempted: %s ' % (tweet['text']))
-
-    except KeyboardInterrupt:
-        stream.close()
-        logging.info('KeyboardInterrupt caught, %s is exiting' % APP_NAME)
 
     return
 

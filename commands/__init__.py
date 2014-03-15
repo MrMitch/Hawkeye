@@ -114,13 +114,12 @@ class Executor(object):
 
     def __init__(self):
         super(Executor, self).__init__()
+        self.command = None
 
     def load(self, command_name, command_options):
         self.command = Executor.commands.get(command_name, command_options)
 
     def __run_command_life_cycle(self, tweet):
-        result = None
-
         try:
             # PRE HOOK
             try:
